@@ -19,4 +19,10 @@ public static class CommandArgs
 
         return (string.Join(' ', titleWords).Trim(), customArgs);
     }
+
+    /// <summary>Extracts a comma-separated "--tags=a,b,c" custom argument into a trimmed tag list.</summary>
+    public static IReadOnlyList<string> ParseTags(IReadOnlyDictionary<string, string> customArgs)
+        => customArgs.TryGetValue("tags", out var value)
+            ? value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            : [];
 }

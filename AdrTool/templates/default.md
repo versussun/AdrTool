@@ -1,7 +1,7 @@
 # {{Number}}. {{Title}}
 
 - Status: {{Status}}
-- Date: {{Date:yyyy-MM-dd}}{{Supersedes}}
+- Date: {{Date:yyyy-MM-dd}}{{Supersedes}}{{Tags}}
 
 ## Context
 

@@ -31,6 +31,14 @@ public sealed class AdrConfig
         AllowTrailingCommas = true,
     };
 
+    /// <summary>Writes this configuration as <see cref="FileName"/> in <paramref name="basePath"/>.</summary>
+    public void Save(string basePath)
+    {
+        var configFile = System.IO.Path.Combine(basePath, FileName);
+        var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(configFile, json);
+    }
+
     /// <summary>
     /// Loads the configuration from <see cref="FileName"/> in <paramref name="basePath"/>.
     /// Returns an empty config (all defaults) when the file does not exist.

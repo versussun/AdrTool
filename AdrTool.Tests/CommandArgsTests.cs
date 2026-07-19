@@ -41,4 +41,22 @@ public class CommandArgsTests
         Assert.Equal("--no-number Title", title);
         Assert.Empty(args);
     }
+
+    [Fact]
+    public void ParseTags_SplitsAndTrimsCommaSeparatedList()
+    {
+        var (_, args) = CommandArgs.Parse(["--tags=security, infra ,security"]);
+
+        var tags = CommandArgs.ParseTags(args);
+
+        Assert.Equal(["security", "infra", "security"], tags);
+    }
+
+    [Fact]
+    public void ParseTags_WithNoTagsArg_ReturnsEmpty()
+    {
+        var (_, args) = CommandArgs.Parse(["Title"]);
+
+        Assert.Empty(CommandArgs.ParseTags(args));
+    }
 }

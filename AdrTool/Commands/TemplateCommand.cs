@@ -32,6 +32,7 @@ public sealed class TemplateCommand : ICommand
               {{Date}}            Today's date, default format yyyy-MM-dd
               {{Date:format}}     Today's date using a .NET date format string, e.g. {{Date:dd.MM.yyyy}}
               {{Supersedes}}      Reference to the ADR being superseded (empty unless created via "adr supersede")
+              {{Tags}}            "- Tags: a, b" line from a "--tags=a,b" argument (empty if none given)
               {{env:VAR_NAME}}    Value of environment variable VAR_NAME (empty if unset)
               {{arg:NAME}}        Value of a "--NAME=value" argument passed to "adr new" (empty if not given)
 

@@ -86,4 +86,17 @@ public class AdrConfigTests
         var expected = Path.GetFullPath(Path.Combine(dir.Path, "reports", "dash.md"));
         Assert.Equal(expected, config.ResolveDashboardPath(dir.Path));
     }
+
+    [Fact]
+    public void Save_ThenLoad_RoundTripsProperties()
+    {
+        using var dir = new TempDirectory();
+        var config = new AdrConfig { Path = "docs/adr" };
+
+        config.Save(dir.Path);
+        var loaded = AdrConfig.Load(dir.Path);
+
+        Assert.Equal("docs/adr", loaded.Path);
+        Assert.True(File.Exists(Path.Combine(dir.Path, AdrConfig.FileName)));
+    }
 }

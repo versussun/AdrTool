@@ -13,6 +13,80 @@ dotnet tool install --global --add-source ./nupkg AdrTool
 
 This installs a global `adr` command (make sure `~/.dotnet/tools` is on your `PATH`).
 
+## Adding it to a repository as a local tool (for local development)
+
+.NET local tools let a repo pin an exact `adr` version via a manifest file (`.config/dotnet-tools.json`), so every contributor and CI run the same version without a global install.
+
+**1. Create the manifest** (once per repo, from its root):
+
+```bash
+dotnet new tool-manifest
+```
+
+This creates `.config/dotnet-tools.json`. Commit it.
+
+<details>
+<summary>If `dotnet new` fails with an "Access to the path ... .templateengine ... is denied" error</summary>
+
+Your local `~/.templateengine` cache is owned by a different user (often from a prior `sudo dotnet ...` run) — fix that ownership, or just write the manifest by hand instead:
+
+```bash
+mkdir -p .config
+cat > .config/dotnet-tools.json <<'EOF'
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {}
+}
+EOF
+```
+</details>
+
+**2. Install `adr` into that manifest.** If you haven't published the package yet (see below), point at a local package folder:
+
+```bash
+# from this repo, build a local package feed:
+cd AdrTool && dotnet pack -c Release -o /path/to/local-feed
+
+# from the target repo:
+dotnet tool install --local --add-source /path/to/local-feed AdrTool
+```
+
+Once published to a feed like NuGet.org, it's just:
+
+```bash
+dotnet tool install --local AdrTool
+```
+
+**3. Everyone else (or CI) just restores** — no `--add-source` needed once a package source is configured (e.g. via a checked-in `nuget.config`, or by default once it's on NuGet.org):
+
+```bash
+dotnet tool restore
+```
+
+**4. Run it:**
+
+```bash
+dotnet adr new "My decision"
+# or explicitly:
+dotnet tool run adr new "My decision"
+```
+
+## Publishing (making it installable without a local build)
+
+To let people run `dotnet tool install --global AdrTool` (or add it to a manifest) without your local package folder, publish it to a NuGet feed such as [nuget.org](https://www.nuget.org):
+
+1. In `AdrTool.csproj`, fill in `Authors`, `PackageLicenseExpression` (e.g. `MIT`), and `RepositoryUrl`. Check that your `PackageId` (`AdrTool`) isn't already taken on nuget.org — rename it if it is, since package IDs are globally unique.
+2. Get an API key from your [NuGet.org account settings](https://www.nuget.org/account/apikeys).
+3. Pack and push:
+   ```bash
+   dotnet pack -c Release -o ./nupkg
+   dotnet nuget push ./nupkg/AdrTool.<version>.nupkg --api-key <YOUR_API_KEY> --source https://api.nuget.org/v3/index.json
+   ```
+4. Once it's indexed (usually a few minutes), anyone can `dotnet tool install --global AdrTool` or `dotnet tool install --local AdrTool` directly, and `dotnet tool restore` works from a fresh clone with no extra config.
+
+Publishing pushes a public package under your own NuGet.org account, so this is a step to run yourself when you're ready — it isn't done as part of this repo's build.
+
 ## Tests
 
 Unit tests live in `AdrTool.Tests` (xUnit):
@@ -25,14 +99,35 @@ dotnet test
 ## Quick start
 
 ```bash
+adr init
+# Created adr.config.json
+# Created docs/adr/0000001-record_architecture_decisions.md
+
 adr new "Use PostgreSQL for storage"
-# Created docs/adr/0000001-use_postgresql_for_storage.md   (or the current folder, if unconfigured)
+# Created docs/adr/0000002-use_postgresql_for_storage.md
 
 adr list
-# 0000001  Proposed              Use PostgreSQL for storage
+# 0000001  Accepted              Record architecture decisions
+# 0000002  Proposed              Use PostgreSQL for storage
 
-adr supersede 1 "Use SQLite instead"
-# rewrites ADR 1's Status line and creates a new ADR referencing it
+adr supersede 2 "Use SQLite instead"
+# rewrites ADR 2's Status line and creates a new ADR referencing it
+
+adr accept 3
+# marks ADR 3 as Accepted in place, no replacement needed
+
+adr link 2 3 --type=amends
+# records that ADR 3 amends ADR 2, without either one replacing the other
+
+adr show 2
+# prints ADR 2's full content to stdout
+
+adr search postgresql
+# greps titles/content across all ADRs and prints the matches
+
+adr new "Rotate secrets automatically" --tags=security,infra
+adr list --tag=security
+# lists only ADRs tagged "security"
 ```
 
 `adr` always uses the folder it's run from as its base path.
@@ -41,15 +136,22 @@ adr supersede 1 "Use SQLite instead"
 
 | Command | Description |
 |---|---|
+| `adr init` | Bootstrap a repo: write `adr.config.json`, create the ADR directory, and create the first "Record architecture decisions" meta-ADR |
 | `adr new <name> [--key=value ...]` | Create a new ADR from the template |
 | `adr supersede <n> <name> [--key=value ...]` | Create a new ADR that supersedes ADR number `<n>` |
-| `adr list` | List all ADRs (number, status, title) |
+| `adr accept <n>` | Mark ADR number `<n>` as `Accepted` in place |
+| `adr reject <n>` | Mark ADR number `<n>` as `Rejected` in place |
+| `adr link <n> <m> [--type=related\|amends]` | Record a relationship between two existing ADRs (default: `related`) |
+| `adr show <n>` | Print ADR number `<n>`'s content to stdout |
+| `adr search <keyword>` | Search titles/content across all ADRs (case-insensitive) |
+| `adr list [--tag=name] [--json]` | List all ADRs (number, status, title, tags), optionally filtered to those carrying `name`; `--json` prints a JSON array instead of the table |
 | `adr template format` | Show the available template placeholder tokens |
 | `adr template copy` | Copy the bundled default template to the configured `templatePath` |
-| `adr dashboard [--recreate]` | Add new ADRs to `index.md` (`--recreate` rebuilds it from scratch) |
+| `adr dashboard [--recreate] [--check] [--tag=name]` | Add new ADRs to `index.md` (`--recreate` rebuilds it from scratch; `--check` exits non-zero without writing if the dashboard is stale; `--tag=name` restricts newly added rows to ADRs carrying that tag) |
+| `adr lint` | Flag ADRs missing `Status`/`Date`, duplicate numbers, or supersede links pointing at nonexistent files; exits non-zero if any issues are found |
 | `adr help` / `adr -h` / `adr --help` | Show usage |
 
-`--key=value` arguments can appear anywhere in `new`/`supersede` (interspersed with the title words) and are available in templates as `{{arg:key}}`.
+`--key=value` arguments can appear anywhere in `new`/`supersede` (interspersed with the title words) and are available in templates as `{{arg:key}}`. `--tags=a,b` is a first-class one of these: it records a comma-separated tag list on the ADR (see [Tags](#tags)).
 
 ## Configuration
 
@@ -88,19 +190,88 @@ Templates are plain Markdown/text files using `{{Name}}` or `{{Name:format}}` to
 | `{{Date}}` | Today's date, default format `yyyy-MM-dd` |
 | `{{Date:format}}` | Today's date using a .NET date format string, e.g. `{{Date:dd.MM.yyyy}}` |
 | `{{Supersedes}}` | Reference to the ADR being superseded (empty unless created via `adr supersede`) |
+| `{{Tags}}` | A `- Tags: a, b` line from a `--tags=a,b` argument (empty if none given) |
 | `{{env:VAR_NAME}}` | Value of environment variable `VAR_NAME` (empty if unset) |
 | `{{arg:NAME}}` | Value of a `--NAME=value` argument passed on the command line (empty if not given) |
 
 Unknown token names are left in the output as-is. The bundled default template lives at `AdrTool/templates/default.md`.
 
+## Bootstrapping a repo
+
+`adr init` sets up a fresh repo in one step: it writes `adr.config.json` (ADRs stored under `docs/adr`), creates that directory, and creates ADR `0000001`, titled "Record architecture decisions" — the meta-ADR convention almost every ADR tool ships, describing the decision to use ADRs at all (per Michael Nygard's original proposal). It's created already marked `Accepted`, and bypasses the template so its content is always the same regardless of any configured `templatePath`. Run it once per repo; it refuses to run again once `adr.config.json` exists.
+
+## Changing status in place
+
+`adr accept <n>` and `adr reject <n>` rewrite an ADR's `Status:` line to `Accepted`/`Rejected` without creating a replacement ADR — useful for the common case of a `Proposed` decision simply being approved or turned down as-is. Use `adr supersede` instead when a *new* decision is actually replacing the old one.
+
 ## Superseding an ADR
 
 `adr supersede <n> <name>` creates a new ADR that records which ADR it supersedes (`{{Supersedes}}`), and rewrites the old ADR's `Status:` line to `Superseded by <new file>`.
+
+## Linking related ADRs
+
+Not every relationship between decisions is a supersession — `adr link <n> <m> [--type=related|amends]` records a relationship between two existing ADRs without changing either one's status:
+
+- `--type=related` (the default) adds a symmetric `- Related: <file>` line to both ADRs.
+- `--type=amends` adds a directional pair instead: `- Amends: <m's file>` on ADR `<n>` and `- Amended by: <n's file>` on ADR `<m>`.
+
+Re-running the same link is a no-op rather than duplicating the line.
 
 ## Dashboard
 
 `adr dashboard` writes a Markdown table of every ADR (number, date added, status, title) ordered by number, with the title linking to its file, to `index.md` in the ADR directory (or wherever `dashboardPath` points — links are computed relative to that file's own location, so it works from any directory).
 
-By default it only *adds* rows for ADRs not already listed — existing rows are left untouched, so a status change (e.g. from `adr supersede`) won't retroactively update a row already in the dashboard. Run `adr dashboard --recreate` to discard the file and rebuild every row from the ADRs' current state.
+By default it only *adds* rows for ADRs not already listed — existing rows are left untouched, so a status change (e.g. from `adr supersede`) won't retroactively update a row already in the dashboard. Run `adr dashboard --recreate` to discard the file and rebuild every row from the ADRs' current state. Pass `--tag=name` to only add rows for ADRs carrying that tag (combine with `--recreate` to rebuild the dashboard restricted to that tag entirely).
 
 The "date added" column comes from the ADR file's own creation time (falling back to today if the filesystem doesn't track that) — not from the ADR's own `{{Date}}` content — since it records when the row was added to the dashboard, not when the ADR itself was written.
+
+## Validation & CI integration
+
+`adr lint` scans every ADR and flags:
+
+- a missing (or empty) `Status:` line
+- a missing (or empty) `Date:` line
+- duplicate order numbers (two files sharing the same leading number)
+- `Supersedes:` lines or `Superseded by <file>` status values that reference a file that doesn't exist
+
+It prints one line per finding and exits `1` if anything was found, `0` otherwise — drop it into CI as a gate:
+
+```bash
+adr lint
+```
+
+`adr dashboard --check` complements the append/`--recreate` model above: instead of writing `index.md`, it exits non-zero if any ADR isn't reflected in it yet (also useful in CI, to catch a forgotten `adr dashboard` before merging):
+
+```bash
+adr dashboard --check
+# Dashboard is stale: 1 ADR(s) not yet added: 0000003
+```
+
+It accepts `--tag=name` the same way `adr dashboard` does, and cannot be combined with `--recreate`.
+
+`adr list --json` prints the same records as `adr list` as a JSON array (`number`, `title`, `status`, `filePath`, `tags`), for scripting or CI consumption instead of parsing the table:
+
+```bash
+adr list --json --tag=security
+```
+
+## Finding ADRs
+
+`adr show <n>` prints ADR number `<n>`'s full Markdown content to stdout — handy when you know the number but not the filename.
+
+`adr search <keyword>` searches every ADR's title and content for `keyword` (case-insensitive) and prints each match's number/status/title along with up to three matching lines, e.g.:
+
+```
+adr search postgresql
+# 0000002  Proposed              Use PostgreSQL for storage
+#     # 0000002. Use PostgreSQL for storage
+```
+
+## Tags
+
+`--tags=a,b` on `adr new`/`adr supersede` records a comma-separated tag list as a `- Tags: a, b` line in the ADR (via the `{{Tags}}` template token). Filter by tag with:
+
+- `adr list --tag=security` — list only ADRs tagged `security`
+- `adr dashboard --tag=security` — restrict which ADRs get added to the dashboard to those tagged `security`
+
+Tags are plain text parsed from that line, so hand-editing an ADR's `Tags:` line works the same as setting it via `--tags`.

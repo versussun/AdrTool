@@ -9,10 +9,11 @@ public sealed class NewCommand : ICommand
     {
         // The ADR name comes from the args (with "--key=value" pairs pulled out for {{arg:key}}).
         var (title, customArgs) = CommandArgs.Parse(args);
+        var tags = CommandArgs.ParseTags(customArgs);
 
         var config = AdrConfig.Load(basePath);
         var service = new AdrService(basePath, config);
-        var created = service.CreateNew(title, customArgs);
+        var created = service.CreateNew(title, customArgs, tags);
 
         Console.WriteLine($"Created {created}");
         return 0;

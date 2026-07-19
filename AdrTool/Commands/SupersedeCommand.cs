@@ -11,10 +11,11 @@ public sealed class SupersedeCommand : ICommand
             throw new AdrToolException("Usage: adr supersede <number> <name>");
 
         var (title, customArgs) = CommandArgs.Parse(args[1..]);
+        var tags = CommandArgs.ParseTags(customArgs);
 
         var config = AdrConfig.Load(basePath);
         var service = new AdrService(basePath, config);
-        var created = service.CreateSuperseding(oldNumber, title, customArgs);
+        var created = service.CreateSuperseding(oldNumber, title, customArgs, tags);
 
         Console.WriteLine($"Created {created}");
         return 0;

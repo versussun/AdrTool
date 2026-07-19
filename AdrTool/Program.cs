@@ -6,11 +6,18 @@ var basePath = Directory.GetCurrentDirectory();
 
 ICommand[] commands =
 [
+    new InitCommand(),
     new NewCommand(),
     new ListCommand(),
+    new ShowCommand(),
+    new SearchCommand(),
     new SupersedeCommand(),
+    new AcceptCommand(),
+    new RejectCommand(),
+    new LinkCommand(),
     new TemplateCommand(),
     new DashboardCommand(),
+    new LintCommand(),
     new HelpCommand(),
 ];
 
