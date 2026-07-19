@@ -35,6 +35,7 @@ public sealed class HelpCommand : ICommand
               adr renumber [--check]                        Fix numbering gaps/duplicates by reassigning sequential numbers
               adr install-hooks [--dashboard-check] [--force]  Install a git pre-commit hook that runs adr lint
               adr config [--json]                           Print the effective configuration (resolved paths)
+              adr completion <bash|zsh>                     Print a shell completion script
 
             "--key=value" arguments are available in templates as "{{arg:key}}" (see "adr template format").
             "--tags=a,b" records comma-separated tags on an ADR, usable with "adr list --tag=" / "adr dashboard --tag=".

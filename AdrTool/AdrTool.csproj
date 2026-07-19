@@ -12,10 +12,9 @@
     <Version>0.1.0</Version>
     <Description>A CLI tool for creating and managing Architecture Decision Records (ADRs) from a customizable template.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <!-- Fill these in before publishing publicly -->
-    <Authors></Authors>
-    <PackageLicenseExpression></PackageLicenseExpression>
-    <RepositoryUrl></RepositoryUrl>
+    <Authors>versussun</Authors>
+    <PackageLicenseExpression>0BSD</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/versussun/AdrTool.git</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>

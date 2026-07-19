@@ -24,6 +24,7 @@ ICommand[] commands =
     new RenumberCommand(service),
     new InstallHooksCommand(basePath),
     new ConfigCommand(config, basePath),
+    new CompletionCommand(),
     new HelpCommand(),
 ];
 

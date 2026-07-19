@@ -551,6 +551,48 @@ public class CommandsTests
     }
 
     [Fact]
+    public void CompletionCommand_Bash_PrintsCompletionFunctionAndCommandNames()
+    {
+        var output = CaptureOutput(() =>
+        {
+            var exitCode = new CompletionCommand().Execute(["bash"]);
+            Assert.Equal(0, exitCode);
+        });
+
+        Assert.Contains("_adr_completions()", output);
+        Assert.Contains("complete -F _adr_completions adr", output);
+        Assert.Contains("renumber", output);
+        Assert.Contains("--json", output);
+    }
+
+    [Fact]
+    public void CompletionCommand_Zsh_PrintsCompdefFunctionAndCommandNames()
+    {
+        var output = CaptureOutput(() =>
+        {
+            var exitCode = new CompletionCommand().Execute(["zsh"]);
+            Assert.Equal(0, exitCode);
+        });
+
+        Assert.Contains("#compdef adr", output);
+        Assert.Contains("_adr()", output);
+        Assert.Contains("install-hooks", output);
+        Assert.Contains("--force", output);
+    }
+
+    [Fact]
+    public void CompletionCommand_UnknownShell_Throws()
+    {
+        Assert.Throws<AdrToolException>(() => new CompletionCommand().Execute(["fish"]));
+    }
+
+    [Fact]
+    public void CompletionCommand_WithNoArgs_Throws()
+    {
+        Assert.Throws<AdrToolException>(() => new CompletionCommand().Execute([]));
+    }
+
+    [Fact]
     public void LintCommand_NoIssues_ReturnsZero()
     {
         using var dir = new TempDirectory();

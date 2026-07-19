@@ -74,16 +74,31 @@ dotnet tool run adr new "My decision"
 
 ## Publishing (making it installable without a local build)
 
-To let people run `dotnet tool install --global AdrTool` (or add it to a manifest) without your local package folder, publish it to a NuGet feed such as [nuget.org](https://www.nuget.org):
+To let people run `dotnet tool install --global AdrTool` (or add it to a manifest) without your local package folder, publish it to a NuGet feed such as [nuget.org](https://www.nuget.org). `AdrTool.csproj` already has `Authors`, `PackageLicenseExpression`, and `RepositoryUrl` filled in.
 
-1. In `AdrTool.csproj`, fill in `Authors`, `PackageLicenseExpression` (e.g. `MIT`), and `RepositoryUrl`. Check that your `PackageId` (`AdrTool`) isn't already taken on nuget.org — rename it if it is, since package IDs are globally unique.
+### Option A: GitHub Actions + Trusted Publishing (recommended)
+
+[.github/workflows/publish.yml](.github/workflows/publish.yml) packs, tests, and pushes the package using [NuGet Trusted Publishing](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing) — no long-lived API key is stored anywhere; the workflow exchanges a short-lived GitHub OIDC token for a temporary (1-hour) NuGet API key at publish time.
+
+One-time setup:
+
+1. On nuget.org: sign in → your username → **Trusted Publishing** → add a policy with Repository Owner `versussun`, Repository `AdrTool`, Workflow File `publish.yml`.
+2. In the GitHub repo: **Settings → Secrets and variables → Actions** → add a repository secret named `NUGET_USER` set to your nuget.org profile username (not your email).
+3. Push `global.json` and `.github/workflows/publish.yml` to the repo (they pin the exact preview SDK version this project targets, so the workflow builds with the same toolchain as local dev).
+
+To publish: **Actions** tab → "Publish to NuGet" → **Run workflow**. It only runs on manual trigger, never automatically on push.
+
+### Option B: Manual push with an API key
+
+1. Check that `PackageId` (`AdrTool`) isn't already taken on nuget.org — rename it if it is, since package IDs are globally unique.
 2. Get an API key from your [NuGet.org account settings](https://www.nuget.org/account/apikeys).
 3. Pack and push:
    ```bash
    dotnet pack -c Release -o ./nupkg
    dotnet nuget push ./nupkg/AdrTool.<version>.nupkg --api-key <YOUR_API_KEY> --source https://api.nuget.org/v3/index.json
    ```
-4. Once it's indexed (usually a few minutes), anyone can `dotnet tool install --global AdrTool` or `dotnet tool install --local AdrTool` directly, and `dotnet tool restore` works from a fresh clone with no extra config.
+
+Either way, once it's indexed (usually a few minutes), anyone can `dotnet tool install --global AdrTool` or `dotnet tool install --local AdrTool` directly, and `dotnet tool restore` works from a fresh clone with no extra config.
 
 Publishing pushes a public package under your own NuGet.org account, so this is a step to run yourself when you're ready — it isn't done as part of this repo's build.
 
@@ -159,6 +174,7 @@ adr list --tag=security
 | `adr renumber [--check]` | Fix numbering gaps/duplicates by reassigning sequential numbers, renaming files and rewriting cross-references to match; `--check` reports what would change and exits non-zero without writing |
 | `adr install-hooks [--dashboard-check] [--force]` | Install a git `pre-commit` hook that runs `adr lint` (and, with `--dashboard-check`, `adr dashboard --check`); refuses to overwrite an existing hook unless `--force` is given |
 | `adr config [--json]` | Print the effective configuration — resolved ADR directory, template path, and dashboard path — after applying `adr.config.json` on top of the defaults |
+| `adr completion <bash\|zsh>` | Print a shell completion script for subcommands and their flags |
 | `adr help` / `adr -h` / `adr --help` | Show usage |
 
 `--key=value` arguments can appear anywhere in `new`/`supersede` (interspersed with the title words) and are available in templates as `{{arg:key}}`. `--tags=a,b` is a first-class one of these: it records a comma-separated tag list on the ADR (see [Tags](#tags)).
@@ -293,6 +309,25 @@ Run `adr dashboard --recreate` afterward — renumbering doesn't rewrite an exis
 adr install-hooks
 adr install-hooks --dashboard-check
 adr install-hooks --force   # overwrite an existing pre-commit hook
+```
+
+## Shell completion
+
+`adr completion bash` and `adr completion zsh` print a completion script to stdout, covering subcommand names and each command's fixed flags (free-form arguments like `new`'s `--key=value` aren't completable and are left out).
+
+Bash — source it for the current session, or add it to your shell startup so it's always loaded:
+
+```bash
+source <(adr completion bash)
+
+# persist it:
+echo 'source <(adr completion bash)' >> ~/.bashrc
+```
+
+Zsh — drop it into a directory on your `fpath` as `_adr`, then start a new shell (or run `compinit`):
+
+```bash
+adr completion zsh > "${fpath[1]}/_adr"
 ```
 
 ## Finding ADRs
