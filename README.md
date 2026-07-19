@@ -81,27 +81,6 @@ dotnet tool install --global --add-source /path/to/local-feed AdrTool
 dotnet tool install --local --add-source /path/to/local-feed AdrTool
 ```
 
-## Releasing a new version
-
-`AdrTool` is published on NuGet.org as [AdrTool](https://www.nuget.org/packages/AdrTool). To ship an update, bump `<Version>` in [AdrTool/AdrTool.csproj](AdrTool/AdrTool.csproj), commit, then publish via one of:
-
-### Option A: GitHub Actions + Trusted Publishing (recommended)
-
-[.github/workflows/publish.yml](.github/workflows/publish.yml) packs, tests, and pushes the package using [NuGet Trusted Publishing](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing) — no long-lived API key is stored anywhere; the workflow exchanges a short-lived GitHub OIDC token for a temporary (1-hour) NuGet API key at publish time. Already configured (Trusted Publishing policy on nuget.org, `NUGET_USER` repo secret) from the initial release.
-
-To publish: **Actions** tab → "Publish to NuGet" → **Run workflow**. It only runs on manual trigger, never automatically on push.
-
-### Option B: Manual push with an API key
-
-1. Get an API key from your [NuGet.org account settings](https://www.nuget.org/account/apikeys).
-2. Pack and push:
-   ```bash
-   dotnet pack -c Release -o ./nupkg
-   dotnet nuget push ./nupkg/AdrTool.<version>.nupkg --api-key <YOUR_API_KEY> --source https://api.nuget.org/v3/index.json
-   ```
-
-Either way, once the new version is indexed (usually a few minutes), `dotnet tool update --global AdrTool` (or `--local`) picks it up.
-
 ## Tests
 
 Unit tests live in `AdrTool.Tests` (xUnit):
