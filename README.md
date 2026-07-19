@@ -4,29 +4,34 @@ A small CLI tool for managing Architecture Decision Records (ADRs) as numbered M
 
 ## Install
 
-From the `AdrTool` project folder:
+`AdrTool` is published on NuGet.org as [AdrTool](https://www.nuget.org/packages/AdrTool). It's a [.NET tool](https://learn.microsoft.com/en-us/dotnet/core/tools/global-tools), installable either globally (one shared install for your whole machine) or locally (pinned per-repo, so every contributor and CI run the exact same version).
+
+### Global install
 
 ```bash
-dotnet pack -c Release -o ./nupkg
-dotnet tool install --global --add-source ./nupkg AdrTool
+dotnet tool install --global AdrTool
 ```
 
-This installs a global `adr` command (make sure `~/.dotnet/tools` is on your `PATH`).
+This puts an `adr` command on your `PATH` (make sure `~/.dotnet/tools` is on it). Run it from anywhere:
 
-## Adding it to a repository as a local tool (for local development)
+```bash
+adr new "My decision"
+```
 
-.NET local tools let a repo pin an exact `adr` version via a manifest file (`.config/dotnet-tools.json`), so every contributor and CI run the same version without a global install.
+Upgrade later with `dotnet tool update --global AdrTool`.
 
-**1. Create the manifest** (once per repo, from its root):
+### Local install (per-repo)
+
+Local tools are pinned via a manifest file (`.config/dotnet-tools.json`) committed to the repo.
+
+**1. Create the manifest** (once per repo, from its root, skip if `.config/dotnet-tools.json` already exists):
 
 ```bash
 dotnet new tool-manifest
 ```
 
-This creates `.config/dotnet-tools.json`. Commit it.
-
 <details>
-<summary>If `dotnet new` fails with an "Access to the path ... .templateengine ... is denied" error</summary>
+<summary>If that fails with an "Access to the path ... .templateengine ... is denied" error</summary>
 
 Your local `~/.templateengine` cache is owned by a different user (often from a prior `sudo dotnet ...` run) — fix that ownership, or just write the manifest by hand instead:
 
@@ -42,29 +47,20 @@ EOF
 ```
 </details>
 
-**2. Install `adr` into that manifest.** If you haven't published the package yet (see below), point at a local package folder:
-
-```bash
-# from this repo, build a local package feed:
-cd AdrTool && dotnet pack -c Release -o /path/to/local-feed
-
-# from the target repo:
-dotnet tool install --local --add-source /path/to/local-feed AdrTool
-```
-
-Once published to a feed like NuGet.org, it's just:
+**2. Install `adr` into that manifest, and commit both files:**
 
 ```bash
 dotnet tool install --local AdrTool
+git add .config/dotnet-tools.json
 ```
 
-**3. Everyone else (or CI) just restores** — no `--add-source` needed once a package source is configured (e.g. via a checked-in `nuget.config`, or by default once it's on NuGet.org):
+**3. Everyone else (or CI) just restores** — no extra setup needed, since NuGet.org is a default package source:
 
 ```bash
 dotnet tool restore
 ```
 
-**4. Run it:**
+**4. Run it** (a local install isn't on `PATH`, so it's invoked through `dotnet`):
 
 ```bash
 dotnet adr new "My decision"
@@ -72,35 +68,39 @@ dotnet adr new "My decision"
 dotnet tool run adr new "My decision"
 ```
 
-## Publishing (making it installable without a local build)
+### Installing from source (unreleased changes)
 
-To let people run `dotnet tool install --global AdrTool` (or add it to a manifest) without your local package folder, publish it to a NuGet feed such as [nuget.org](https://www.nuget.org). `AdrTool.csproj` already has `Authors`, `PackageLicenseExpression`, and `RepositoryUrl` filled in.
+To try a change that hasn't shipped to NuGet yet, pack the project locally and install from that folder instead of NuGet.org:
+
+```bash
+cd AdrTool && dotnet pack -c Release -o /path/to/local-feed
+
+# global:
+dotnet tool install --global --add-source /path/to/local-feed AdrTool
+# or local, from the target repo:
+dotnet tool install --local --add-source /path/to/local-feed AdrTool
+```
+
+## Releasing a new version
+
+`AdrTool` is published on NuGet.org as [AdrTool](https://www.nuget.org/packages/AdrTool). To ship an update, bump `<Version>` in [AdrTool/AdrTool.csproj](AdrTool/AdrTool.csproj), commit, then publish via one of:
 
 ### Option A: GitHub Actions + Trusted Publishing (recommended)
 
-[.github/workflows/publish.yml](.github/workflows/publish.yml) packs, tests, and pushes the package using [NuGet Trusted Publishing](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing) — no long-lived API key is stored anywhere; the workflow exchanges a short-lived GitHub OIDC token for a temporary (1-hour) NuGet API key at publish time.
-
-One-time setup:
-
-1. On nuget.org: sign in → your username → **Trusted Publishing** → add a policy with Repository Owner `versussun`, Repository `AdrTool`, Workflow File `publish.yml`.
-2. In the GitHub repo: **Settings → Secrets and variables → Actions** → add a repository secret named `NUGET_USER` set to your nuget.org profile username (not your email).
-3. Push `global.json` and `.github/workflows/publish.yml` to the repo (they pin the exact preview SDK version this project targets, so the workflow builds with the same toolchain as local dev).
+[.github/workflows/publish.yml](.github/workflows/publish.yml) packs, tests, and pushes the package using [NuGet Trusted Publishing](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing) — no long-lived API key is stored anywhere; the workflow exchanges a short-lived GitHub OIDC token for a temporary (1-hour) NuGet API key at publish time. Already configured (Trusted Publishing policy on nuget.org, `NUGET_USER` repo secret) from the initial release.
 
 To publish: **Actions** tab → "Publish to NuGet" → **Run workflow**. It only runs on manual trigger, never automatically on push.
 
 ### Option B: Manual push with an API key
 
-1. Check that `PackageId` (`AdrTool`) isn't already taken on nuget.org — rename it if it is, since package IDs are globally unique.
-2. Get an API key from your [NuGet.org account settings](https://www.nuget.org/account/apikeys).
-3. Pack and push:
+1. Get an API key from your [NuGet.org account settings](https://www.nuget.org/account/apikeys).
+2. Pack and push:
    ```bash
    dotnet pack -c Release -o ./nupkg
    dotnet nuget push ./nupkg/AdrTool.<version>.nupkg --api-key <YOUR_API_KEY> --source https://api.nuget.org/v3/index.json
    ```
 
-Either way, once it's indexed (usually a few minutes), anyone can `dotnet tool install --global AdrTool` or `dotnet tool install --local AdrTool` directly, and `dotnet tool restore` works from a fresh clone with no extra config.
-
-Publishing pushes a public package under your own NuGet.org account, so this is a step to run yourself when you're ready — it isn't done as part of this repo's build.
+Either way, once the new version is indexed (usually a few minutes), `dotnet tool update --global AdrTool` (or `--local`) picks it up.
 
 ## Tests
 

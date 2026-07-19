@@ -1,0 +1,5 @@
+{
+  "path": "docs/adr",
+  "templatePath": "docs/adr/templates/adr-template.md",
+  "dashboardPath": "docs/adr/index.md"
+}
