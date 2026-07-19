@@ -4,6 +4,28 @@
 
 A small CLI tool for managing Architecture Decision Records (ADRs) as numbered Markdown files, generated from a customizable template.
 
+## Documentation
+
+- [Install](#install)
+- [Tests](#tests)
+- [Quick start](#quick-start)
+- [Commands](#commands)
+- [Configuration](#configuration)
+- [Profiles](#profiles)
+- [Filenames](#filenames)
+- [Template tokens](#template-tokens)
+- [Bootstrapping a repo](#bootstrapping-a-repo)
+- [Changing status in place](#changing-status-in-place)
+- [Superseding an ADR](#superseding-an-adr)
+- [Linking related ADRs](#linking-related-adrs)
+- [Dashboard](#dashboard)
+- [Validation & CI integration](#validation--ci-integration)
+- [Renumbering](#renumbering)
+- [Git hooks](#git-hooks)
+- [Shell completion](#shell-completion)
+- [Finding ADRs](#finding-adrs)
+- [Tags](#tags)
+
 ## Install
 
 `AdrTool` is published on NuGet.org as [AdrTool](https://www.nuget.org/packages/AdrTool). It's a [.NET tool](https://learn.microsoft.com/en-us/dotnet/core/tools/global-tools), installable either globally (one shared install for your whole machine) or locally (pinned per-repo, so every contributor and CI run the exact same version).
