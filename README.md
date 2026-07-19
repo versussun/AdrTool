@@ -1,5 +1,7 @@
 # adr
 
+[![NuGet](https://img.shields.io/nuget/v/AdrTool.svg)](https://www.nuget.org/packages/AdrTool)
+
 A small CLI tool for managing Architecture Decision Records (ADRs) as numbered Markdown files, generated from a customizable template.
 
 ## Install
