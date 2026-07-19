@@ -1,0 +1,20 @@
+# .NET build artifacts
+bin/
+obj/
+nupkg/
+*.nupkg
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+
+# IDE / editor
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# OS files
+.DS_Store
+Thumbs.db

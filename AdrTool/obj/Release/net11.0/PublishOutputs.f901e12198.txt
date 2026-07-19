@@ -1,6 +1,0 @@
-/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/publish/AdrTool
-/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/publish/templates/default.md
-/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/publish/AdrTool.dll
-/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/publish/AdrTool.deps.json
-/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/publish/AdrTool.runtimeconfig.json
-/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/publish/AdrTool.pdb
