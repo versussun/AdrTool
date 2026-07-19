@@ -70,6 +70,8 @@ dotnet adr new "My decision"
 dotnet tool run adr new "My decision"
 ```
 
+**Upgrade later** with `dotnet tool update AdrTool`, then commit the updated `.config/dotnet-tools.json` so everyone (and CI) picks up the new version on their next `dotnet tool restore`.
+
 ### Installing from source (unreleased changes)
 
 To try a change that hasn't shipped to NuGet yet, pack the project locally and install from that folder instead of NuGet.org:
