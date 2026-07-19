@@ -6,5 +6,5 @@ public interface ICommand
     /// <summary>The name typed on the command line (e.g. "new").</summary>
     string Name { get; }
 
-    int Execute(string[] args, string basePath);
+    int Execute(string[] args);
 }

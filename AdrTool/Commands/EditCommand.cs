@@ -6,17 +6,15 @@ namespace AdrTool.Commands;
 /// "adr edit &lt;n&gt;" — opens the ADR's file in $VISUAL or $EDITOR (falling back to a platform
 /// default), waits for the editor to exit, and returns its exit code.
 /// </summary>
-public sealed class EditCommand : ICommand
+public sealed class EditCommand(AdrService service) : ICommand
 {
     public string Name => "edit";
 
-    public int Execute(string[] args, string basePath)
+    public int Execute(string[] args)
     {
         if (args.Length < 1 || !int.TryParse(args[0].TrimStart('#'), out var number))
             throw new AdrToolException("Usage: adr edit <n>");
 
-        var config = AdrConfig.Load(basePath);
-        var service = new AdrService(basePath, config);
         var filePath = service.GetFilePath(number);
 
         var editorCommand = Environment.GetEnvironmentVariable("VISUAL")

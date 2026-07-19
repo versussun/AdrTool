@@ -526,4 +526,82 @@ public class AdrServiceTests
 
         Assert.Empty(service.GetMissingDashboardEntries());
     }
+
+    [Fact]
+    public void PlanRenumber_SequentialAdrs_ReturnsEmpty()
+    {
+        using var dir = new TempDirectory();
+        var service = new AdrService(dir.Path, new AdrConfig());
+        service.CreateNew("First");
+        service.CreateNew("Second");
+
+        Assert.Empty(service.PlanRenumber());
+    }
+
+    [Fact]
+    public void PlanRenumber_GapInNumbering_PlansShiftDown()
+    {
+        using var dir = new TempDirectory();
+        var service = new AdrService(dir.Path, new AdrConfig());
+        service.CreateNew("First");
+        var second = service.CreateNew("Second");
+        service.CreateNew("Third");
+        File.Delete(second); // leaves a gap: #1 and #3 exist, #2 doesn't
+
+        var plan = service.PlanRenumber();
+
+        Assert.Single(plan);
+        Assert.Equal(3, plan[0].OldNumber);
+        Assert.Equal(2, plan[0].NewNumber);
+    }
+
+    [Fact]
+    public void Renumber_DuplicateNumbers_ReassignsSequentiallyAndFixesHeading()
+    {
+        using var dir = new TempDirectory();
+        var service = new AdrService(dir.Path, new AdrConfig());
+        var first = service.CreateNew("First");
+        File.Copy(first, Path.Combine(Path.GetDirectoryName(first)!, "0000001-duplicate.md"));
+
+        var changes = service.Renumber();
+
+        Assert.Empty(service.PlanRenumber()); // now sequential
+        Assert.Equal(2, Directory.GetFiles(dir.Path, "*.md").Length);
+        var files = Directory.GetFiles(dir.Path, "*.md").OrderBy(f => f).ToArray();
+        Assert.Equal("0000001-duplicate.md", Path.GetFileName(files[0]));
+        Assert.Equal("0000002-first.md", Path.GetFileName(files[1]));
+        Assert.Contains("# 0000002. First", File.ReadAllText(files[1]));
+    }
+
+    [Fact]
+    public void Renumber_UpdatesCrossReferencesInUnaffectedFiles()
+    {
+        using var dir = new TempDirectory();
+        var service = new AdrService(dir.Path, new AdrConfig());
+        var first = service.CreateNew("First");
+        var second = service.CreateNew("Second");
+        var extra = service.CreateNew("Extra");
+        File.Delete(second); // gap: #2 removed, so #3 ("Extra") will be renumbered to #2
+        service.Link(1, 3, "related");
+
+        service.Renumber();
+
+        var firstContent = File.ReadAllText(first); // #1 itself unchanged, but its reference must update
+        Assert.Contains("- Related: 0000002-extra.md", firstContent);
+        Assert.DoesNotContain("0000003-extra.md", firstContent);
+    }
+
+    [Fact]
+    public void Renumber_AlreadySequential_ReturnsEmptyAndChangesNothing()
+    {
+        using var dir = new TempDirectory();
+        var service = new AdrService(dir.Path, new AdrConfig());
+        service.CreateNew("First");
+        service.CreateNew("Second");
+
+        var changes = service.Renumber();
+
+        Assert.Empty(changes);
+        Assert.Equal(2, Directory.GetFiles(dir.Path, "*.md").Length);
+    }
 }

@@ -5,11 +5,11 @@ namespace AdrTool.Commands;
 /// existing ADRs without either one superseding the other. Defaults to a symmetric "related" link;
 /// "--type=amends" records a directional "Amends" / "Amended by" pair instead.
 /// </summary>
-public sealed class LinkCommand : ICommand
+public sealed class LinkCommand(AdrService service) : ICommand
 {
     public string Name => "link";
 
-    public int Execute(string[] args, string basePath)
+    public int Execute(string[] args)
     {
         var (numbers, customArgs) = CommandArgs.Parse(args);
         var parts = numbers.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -21,8 +21,6 @@ public sealed class LinkCommand : ICommand
 
         var type = customArgs.TryGetValue("type", out var value) ? value : "related";
 
-        var config = AdrConfig.Load(basePath);
-        var service = new AdrService(basePath, config);
         service.Link(fromNumber, toNumber, type);
 
         Console.WriteLine($"Linked ADR {fromNumber} and ADR {toNumber} ({type})");

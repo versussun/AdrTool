@@ -13,6 +13,9 @@ public sealed record AdrSearchResult(AdrRecord Record, IReadOnlyList<string> Mat
 /// <summary>A single "adr lint" finding: a problem detected in an ADR file.</summary>
 public sealed record AdrLintIssue(int Number, string FilePath, string Message);
 
+/// <summary>A single file affected by "adr renumber": its old and new number/filename.</summary>
+public sealed record AdrRenumberChange(int OldNumber, int NewNumber, string OldFileName, string NewFileName);
+
 /// <summary>Creates and inspects ADR documents based on the configured template.</summary>
 public sealed partial class AdrService(string basePath, AdrConfig config)
 {
@@ -254,6 +257,140 @@ public sealed partial class AdrService(string basePath, AdrConfig config)
         }
 
         return issues.OrderBy(i => i.Number).ThenBy(i => i.Message, StringComparer.Ordinal).ToList();
+    }
+
+    /// <summary>
+    /// Computes the changes "adr renumber" would make: reassigning sequential numbers starting at 1,
+    /// in order of (current number, filename), without touching disk. Entries already in sequence
+    /// are omitted. Used by "adr renumber --check" and internally by <see cref="Renumber"/>.
+    /// </summary>
+    public IReadOnlyList<AdrRenumberChange> PlanRenumber()
+    {
+        var adrDirectory = config.ResolveAdrDirectory(basePath);
+        if (!Directory.Exists(adrDirectory))
+            return [];
+
+        var entries = new List<(int Number, string FileName)>();
+        foreach (var file in Directory.EnumerateFiles(adrDirectory, "*.md"))
+        {
+            var fileName = Path.GetFileName(file);
+            var match = LeadingNumber().Match(fileName);
+            if (!match.Success || !int.TryParse(match.Groups[1].Value, out var number))
+                continue;
+
+            entries.Add((number, fileName));
+        }
+
+        var ordered = entries
+            .OrderBy(e => e.Number)
+            .ThenBy(e => e.FileName, StringComparer.Ordinal)
+            .ToList();
+
+        var changes = new List<AdrRenumberChange>();
+        var nextNumber = 1;
+        foreach (var entry in ordered)
+        {
+            var newNumber = nextNumber++;
+            if (newNumber == entry.Number)
+                continue;
+
+            var newNumberText = newNumber.ToString($"D{NumberPadding}", CultureInfo.InvariantCulture);
+            var newFileName = $"{newNumberText}-{StripLeadingNumber(entry.FileName)}";
+            changes.Add(new AdrRenumberChange(entry.Number, newNumber, entry.FileName, newFileName));
+        }
+
+        return changes;
+    }
+
+    /// <summary>
+    /// Applies <see cref="PlanRenumber"/>: renames affected files to sequential numbers and rewrites
+    /// every ADR's Supersedes/"Superseded by"/Related/Amends/"Amended by" references (plus each
+    /// renumbered file's own heading number) to match. Returns the changes actually made (empty if
+    /// numbering was already sequential). Existing dashboards are not updated; re-run
+    /// "adr dashboard --recreate" afterward.
+    /// </summary>
+    public IReadOnlyList<AdrRenumberChange> Renumber()
+    {
+        var changes = PlanRenumber();
+        if (changes.Count == 0)
+            return changes;
+
+        var adrDirectory = config.ResolveAdrDirectory(basePath);
+        var nameMap = changes.ToDictionary(c => c.OldFileName, c => c.NewFileName, StringComparer.Ordinal);
+        var numberTextMap = changes.ToDictionary(
+            c => c.OldFileName,
+            c => (
+                Old: c.OldNumber.ToString($"D{NumberPadding}", CultureInfo.InvariantCulture),
+                New: c.NewNumber.ToString($"D{NumberPadding}", CultureInfo.InvariantCulture)));
+
+        var allFiles = Directory.EnumerateFiles(adrDirectory, "*.md").ToList();
+        var rewritten = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        foreach (var file in allFiles)
+        {
+            var content = File.ReadAllText(file);
+
+            foreach (var (oldName, newName) in nameMap)
+                content = content.Replace(oldName, newName, StringComparison.Ordinal);
+
+            if (numberTextMap.TryGetValue(Path.GetFileName(file), out var numbers))
+                content = ReplaceHeadingNumber(content, numbers.Old, numbers.New);
+
+            rewritten[file] = content;
+        }
+
+        // Renumbered files: write their new content to a temp file first, only deleting the
+        // original once its content is safely persisted elsewhere, then move the temp file into
+        // its final name. This avoids clobbering another ADR that still occupies that filename.
+        var tempPaths = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var change in changes)
+        {
+            var oldPath = Path.Combine(adrDirectory, change.OldFileName);
+            var tempPath = Path.Combine(adrDirectory, change.NewFileName + ".renumber-tmp");
+            File.WriteAllText(tempPath, rewritten[oldPath]);
+            tempPaths[oldPath] = tempPath;
+        }
+
+        foreach (var change in changes)
+            File.Delete(Path.Combine(adrDirectory, change.OldFileName));
+
+        foreach (var change in changes)
+        {
+            var oldPath = Path.Combine(adrDirectory, change.OldFileName);
+            File.Move(tempPaths[oldPath], Path.Combine(adrDirectory, change.NewFileName));
+        }
+
+        // Files that weren't themselves renumbered may still need their cross-references updated.
+        var renumberedPaths = changes
+            .Select(c => Path.Combine(adrDirectory, c.OldFileName))
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var file in allFiles)
+        {
+            if (renumberedPaths.Contains(file))
+                continue;
+
+            if (rewritten[file] != File.ReadAllText(file))
+                File.WriteAllText(file, rewritten[file]);
+        }
+
+        return changes;
+    }
+
+    /// <summary>Strips a filename's leading "NNNNNNN-" order-number prefix, leaving the slug + extension.</summary>
+    private static string StripLeadingNumber(string fileName)
+    {
+        var match = LeadingNumber().Match(fileName);
+        return fileName[match.Length..].TrimStart('-');
+    }
+
+    /// <summary>Rewrites the padded order number at the start of an ADR's first heading line, if present.</summary>
+    private static string ReplaceHeadingNumber(string content, string oldNumberText, string newNumberText)
+    {
+        var pattern = new Regex($@"(?m)^(?<prefix>#+\s*){Regex.Escape(oldNumberText)}");
+        return pattern.IsMatch(content)
+            ? pattern.Replace(content, match => match.Groups["prefix"].Value + newNumberText, 1)
+            : content;
     }
 
     /// <summary>

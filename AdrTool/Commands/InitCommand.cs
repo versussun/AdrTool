@@ -4,13 +4,13 @@ namespace AdrTool.Commands;
 /// "adr init" — bootstraps a repo for ADRs: writes adr.config.json, creates the ADR directory,
 /// and creates the standard "Record architecture decisions" meta-ADR as ADR 1.
 /// </summary>
-public sealed class InitCommand : ICommand
+public sealed class InitCommand(string basePath) : ICommand
 {
     public string Name => "init";
 
     private const string DefaultAdrPath = "docs/adr";
 
-    public int Execute(string[] args, string basePath)
+    public int Execute(string[] args)
     {
         var configPath = Path.Combine(basePath, AdrConfig.FileName);
         if (File.Exists(configPath))

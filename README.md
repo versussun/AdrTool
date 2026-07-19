@@ -156,6 +156,8 @@ adr list --tag=security
 | `adr template copy` | Copy the bundled default template to the configured `templatePath` |
 | `adr dashboard [--recreate] [--check] [--tag=name]` | Add new ADRs to `index.md` (`--recreate` rebuilds it from scratch; `--check` exits non-zero without writing if the dashboard is stale; `--tag=name` restricts newly added rows to ADRs carrying that tag) |
 | `adr lint` | Flag ADRs missing `Status`/`Date`, duplicate numbers, or supersede links pointing at nonexistent files; exits non-zero if any issues are found |
+| `adr renumber [--check]` | Fix numbering gaps/duplicates by reassigning sequential numbers, renaming files and rewriting cross-references to match; `--check` reports what would change and exits non-zero without writing |
+| `adr install-hooks [--dashboard-check] [--force]` | Install a git `pre-commit` hook that runs `adr lint` (and, with `--dashboard-check`, `adr dashboard --check`); refuses to overwrite an existing hook unless `--force` is given |
 | `adr config [--json]` | Print the effective configuration — resolved ADR directory, template path, and dashboard path — after applying `adr.config.json` on top of the defaults |
 | `adr help` / `adr -h` / `adr --help` | Show usage |
 
@@ -261,6 +263,36 @@ It accepts `--tag=name` the same way `adr dashboard` does, and cannot be combine
 
 ```bash
 adr list --json --tag=security
+```
+
+## Renumbering
+
+`adr lint` only *flags* duplicate numbers; `adr renumber` fixes both duplicates and gaps by walking every ADR in order (current number, then filename) and reassigning sequential numbers starting at 1. For each file that moves, it:
+
+- renames the file to its new `NNNNNNN-slug.md` name,
+- rewrites the leading order number in that file's own heading, and
+- rewrites `Supersedes:` / `Superseded by …` / `Related:` / `Amends:` / `Amended by:` references to it in *every* ADR, not just the ones being renumbered.
+
+```bash
+adr renumber
+# Renumbered 1 ADR(s):
+#   0000003-third.md -> 0000002-third.md
+# Run "adr dashboard --recreate" to refresh index.md with the new links.
+
+adr renumber --check
+# reports the same plan and exits non-zero without writing anything — useful as a CI gate
+```
+
+Run `adr dashboard --recreate` afterward — renumbering doesn't rewrite an existing `index.md`, since dashboard rows are otherwise treated as append-only (see [Dashboard](#dashboard)).
+
+## Git hooks
+
+`adr install-hooks` writes a `pre-commit` hook to the repo's `.git/hooks` (resolving worktree/submodule `.git` files too) that runs `adr lint` before allowing a commit — add `--dashboard-check` to also gate on `adr dashboard --check`. It won't overwrite an existing `pre-commit` hook unless you pass `--force`. It detects a local-tool install (a `.config/dotnet-tools.json` manifest) and emits `dotnet adr ...` instead of `adr ...` in that case:
+
+```bash
+adr install-hooks
+adr install-hooks --dashboard-check
+adr install-hooks --force   # overwrite an existing pre-commit hook
 ```
 
 ## Finding ADRs

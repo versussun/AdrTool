@@ -7,19 +7,16 @@ namespace AdrTool.Commands;
 /// yet reflected in the dashboard, for use as a CI gate. "--tag=name" restricts newly added rows
 /// (or, with "--recreate"/"--check", the whole dashboard) to ADRs carrying that tag.
 /// </summary>
-public sealed class DashboardCommand : ICommand
+public sealed class DashboardCommand(AdrService service) : ICommand
 {
     public string Name => "dashboard";
 
-    public int Execute(string[] args, string basePath)
+    public int Execute(string[] args)
     {
         var recreate = args.Contains("--recreate");
         var check = args.Contains("--check");
         var (_, customArgs) = CommandArgs.Parse(args);
         var tag = customArgs.TryGetValue("tag", out var value) ? value : null;
-
-        var config = AdrConfig.Load(basePath);
-        var service = new AdrService(basePath, config);
 
         if (check)
         {

@@ -7,7 +7,7 @@ namespace AdrTool.Commands;
 /// "adr config [--json]" — prints the effective configuration, i.e. adr.config.json's values
 /// resolved against their defaults, for debugging what "adr" will actually do in this folder.
 /// </summary>
-public sealed class ConfigCommand : ICommand
+public sealed class ConfigCommand(AdrConfig config, string basePath) : ICommand
 {
     public string Name => "config";
 
@@ -24,9 +24,8 @@ public sealed class ConfigCommand : ICommand
         string? TemplatePath,
         string DashboardPath);
 
-    public int Execute(string[] args, string basePath)
+    public int Execute(string[] args)
     {
-        var config = AdrConfig.Load(basePath);
         var configFile = Path.Combine(basePath, AdrConfig.FileName);
 
         var resolved = new ResolvedConfig(

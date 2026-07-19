@@ -3,29 +3,33 @@ using AdrTool.Commands;
 
 // The base path is the folder the tool is executed from.
 var basePath = Directory.GetCurrentDirectory();
+var config = AdrConfig.Load(basePath);
+var service = new AdrService(basePath, config);
 
 ICommand[] commands =
 [
-    new InitCommand(),
-    new NewCommand(),
-    new ListCommand(),
-    new ShowCommand(),
-    new EditCommand(),
-    new SearchCommand(),
-    new SupersedeCommand(),
-    new AcceptCommand(),
-    new RejectCommand(),
-    new LinkCommand(),
-    new TemplateCommand(),
-    new DashboardCommand(),
-    new LintCommand(),
-    new ConfigCommand(),
+    new InitCommand(basePath),
+    new NewCommand(service),
+    new ListCommand(service),
+    new ShowCommand(service),
+    new EditCommand(service),
+    new SearchCommand(service),
+    new SupersedeCommand(service),
+    new AcceptCommand(service),
+    new RejectCommand(service),
+    new LinkCommand(service),
+    new TemplateCommand(config, basePath),
+    new DashboardCommand(service),
+    new LintCommand(service),
+    new RenumberCommand(service),
+    new InstallHooksCommand(basePath),
+    new ConfigCommand(config, basePath),
     new HelpCommand(),
 ];
 
 try
 {
-    return Run(args, basePath);
+    return Run(args);
 }
 catch (AdrToolException ex)
 {
@@ -33,7 +37,7 @@ catch (AdrToolException ex)
     return 1;
 }
 
-int Run(string[] args, string basePath)
+int Run(string[] args)
 {
     if (args.Length == 0)
     {
@@ -51,5 +55,5 @@ int Run(string[] args, string basePath)
         return 1;
     }
 
-    return command.Execute(args[1..], basePath);
+    return command.Execute(args[1..]);
 }

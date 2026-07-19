@@ -5,7 +5,7 @@ public sealed class HelpCommand : ICommand
 {
     public string Name => "help";
 
-    public int Execute(string[] args, string basePath)
+    public int Execute(string[] args)
     {
         Print();
         return 0;
@@ -32,11 +32,13 @@ public sealed class HelpCommand : ICommand
               adr template copy                            Copy the default template to the configured templatePath
               adr dashboard [--recreate] [--check] [--tag=name]  Add new ADRs to index.md (--recreate rebuilds it; --check exits non-zero if stale)
               adr lint                                      Flag ADRs missing Status/Date, duplicate numbers, or dead supersede links
+              adr renumber [--check]                        Fix numbering gaps/duplicates by reassigning sequential numbers
+              adr install-hooks [--dashboard-check] [--force]  Install a git pre-commit hook that runs adr lint
               adr config [--json]                           Print the effective configuration (resolved paths)
 
             "--key=value" arguments are available in templates as "{{arg:key}}" (see "adr template format").
             "--tags=a,b" records comma-separated tags on an ADR, usable with "adr list --tag=" / "adr dashboard --tag=".
-            "adr lint" and "adr dashboard --check" exit non-zero on failure, for use as CI gates.
+            "adr lint", "adr dashboard --check", and "adr renumber --check" exit non-zero on failure, for use as CI gates.
 
             Configuration (adr.config.json in the current folder):
               path          Directory where ADRs are stored (default: current folder)

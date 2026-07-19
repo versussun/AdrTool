@@ -1,18 +1,16 @@
 namespace AdrTool.Commands;
 
 /// <summary>"adr search &lt;keyword&gt;" — greps titles/content across all ADRs.</summary>
-public sealed class SearchCommand : ICommand
+public sealed class SearchCommand(AdrService service) : ICommand
 {
     public string Name => "search";
 
-    public int Execute(string[] args, string basePath)
+    public int Execute(string[] args)
     {
         var keyword = string.Join(' ', args).Trim();
         if (string.IsNullOrWhiteSpace(keyword))
             throw new AdrToolException("Usage: adr search <keyword>");
 
-        var config = AdrConfig.Load(basePath);
-        var service = new AdrService(basePath, config);
         var results = service.Search(keyword);
 
         if (results.Count == 0)

@@ -7,7 +7,7 @@ namespace AdrTool.Commands;
 /// "adr list [--tag=name] [--json]" — lists all ADRs, optionally filtered to those carrying a given
 /// tag. "--json" prints a JSON array instead of the table, for scripting/CI consumption.
 /// </summary>
-public sealed class ListCommand : ICommand
+public sealed class ListCommand(AdrService service) : ICommand
 {
     public string Name => "list";
 
@@ -17,14 +17,12 @@ public sealed class ListCommand : ICommand
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    public int Execute(string[] args, string basePath)
+    public int Execute(string[] args)
     {
         var json = args.Contains("--json");
         var (_, customArgs) = CommandArgs.Parse(args);
         var tag = customArgs.TryGetValue("tag", out var value) ? value : null;
 
-        var config = AdrConfig.Load(basePath);
-        var service = new AdrService(basePath, config);
         var records = service.ListAll();
 
         if (tag is not null)

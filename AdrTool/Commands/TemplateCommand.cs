@@ -1,18 +1,18 @@
 namespace AdrTool.Commands;
 
 /// <summary>"adr template format|copy" — template tooling subcommands.</summary>
-public sealed class TemplateCommand : ICommand
+public sealed class TemplateCommand(AdrConfig config, string basePath) : ICommand
 {
     public string Name => "template";
 
-    public int Execute(string[] args, string basePath)
+    public int Execute(string[] args)
     {
         var subcommand = args.Length > 0 ? args[0] : null;
 
         return subcommand switch
         {
             "format" => FormatCommand(),
-            "copy" => CopyCommand(basePath),
+            "copy" => CopyCommand(),
             _ => throw new AdrToolException("Usage: adr template format | adr template copy"),
         };
     }
@@ -42,9 +42,8 @@ public sealed class TemplateCommand : ICommand
         return 0;
     }
 
-    private static int CopyCommand(string basePath)
+    private int CopyCommand()
     {
-        var config = AdrConfig.Load(basePath);
         var templatePath = config.ResolveTemplatePath(basePath)
             ?? throw new AdrToolException($"No templatePath configured. Add \"templatePath\" to {AdrConfig.FileName} first.");
 
