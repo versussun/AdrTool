@@ -122,6 +122,12 @@ adr link 2 3 --type=amends
 adr show 2
 # prints ADR 2's full content to stdout
 
+adr edit 2
+# opens ADR 2 in $VISUAL/$EDITOR
+
+adr config
+# prints the effective configuration (resolved paths)
+
 adr search postgresql
 # greps titles/content across all ADRs and prints the matches
 
@@ -143,12 +149,14 @@ adr list --tag=security
 | `adr reject <n>` | Mark ADR number `<n>` as `Rejected` in place |
 | `adr link <n> <m> [--type=related\|amends]` | Record a relationship between two existing ADRs (default: `related`) |
 | `adr show <n>` | Print ADR number `<n>`'s content to stdout |
+| `adr edit <n>` | Open ADR number `<n>` in `$VISUAL`/`$EDITOR` (falls back to a platform default) |
 | `adr search <keyword>` | Search titles/content across all ADRs (case-insensitive) |
 | `adr list [--tag=name] [--json]` | List all ADRs (number, status, title, tags), optionally filtered to those carrying `name`; `--json` prints a JSON array instead of the table |
 | `adr template format` | Show the available template placeholder tokens |
 | `adr template copy` | Copy the bundled default template to the configured `templatePath` |
 | `adr dashboard [--recreate] [--check] [--tag=name]` | Add new ADRs to `index.md` (`--recreate` rebuilds it from scratch; `--check` exits non-zero without writing if the dashboard is stale; `--tag=name` restricts newly added rows to ADRs carrying that tag) |
 | `adr lint` | Flag ADRs missing `Status`/`Date`, duplicate numbers, or supersede links pointing at nonexistent files; exits non-zero if any issues are found |
+| `adr config [--json]` | Print the effective configuration — resolved ADR directory, template path, and dashboard path — after applying `adr.config.json` on top of the defaults |
 | `adr help` / `adr -h` / `adr --help` | Show usage |
 
 `--key=value` arguments can appear anywhere in `new`/`supersede` (interspersed with the title words) and are available in templates as `{{arg:key}}`. `--tags=a,b` is a first-class one of these: it records a comma-separated tag list on the ADR (see [Tags](#tags)).
@@ -258,6 +266,8 @@ adr list --json --tag=security
 ## Finding ADRs
 
 `adr show <n>` prints ADR number `<n>`'s full Markdown content to stdout — handy when you know the number but not the filename.
+
+`adr edit <n>` opens ADR number `<n>`'s file in your editor: it uses `$VISUAL` if set, then `$EDITOR`, then falls back to `notepad` on Windows or `vi` elsewhere. The command waits for the editor to exit and returns its exit code. If your editor variable includes flags (e.g. `EDITOR="code --wait"`), they're passed through.
 
 `adr search <keyword>` searches every ADR's title and content for `keyword` (case-insensitive) and prints each match's number/status/title along with up to three matching lines, e.g.:
 

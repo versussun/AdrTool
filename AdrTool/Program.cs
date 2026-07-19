@@ -10,6 +10,7 @@ ICommand[] commands =
     new NewCommand(),
     new ListCommand(),
     new ShowCommand(),
+    new EditCommand(),
     new SearchCommand(),
     new SupersedeCommand(),
     new AcceptCommand(),
@@ -18,6 +19,7 @@ ICommand[] commands =
     new TemplateCommand(),
     new DashboardCommand(),
     new LintCommand(),
+    new ConfigCommand(),
     new HelpCommand(),
 ];
 

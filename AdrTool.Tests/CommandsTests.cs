@@ -371,6 +371,61 @@ public class CommandsTests
     }
 
     [Fact]
+    public void EditCommand_UnknownNumber_Throws()
+    {
+        using var dir = new TempDirectory();
+
+        Assert.Throws<AdrToolException>(() => new EditCommand().Execute(["99"], dir.Path));
+    }
+
+    [Fact]
+    public void EditCommand_WithNoArgs_Throws()
+    {
+        using var dir = new TempDirectory();
+
+        Assert.Throws<AdrToolException>(() => new EditCommand().Execute([], dir.Path));
+    }
+
+    [Fact]
+    public void ConfigCommand_WithNoConfigFile_PrintsDefaults()
+    {
+        using var dir = new TempDirectory();
+
+        var output = CaptureOutput(() =>
+        {
+            var exitCode = new ConfigCommand().Execute([], dir.Path);
+            Assert.Equal(0, exitCode);
+        });
+
+        Assert.Contains("not found, using defaults", output);
+        Assert.Contains("(built-in default)", output);
+        Assert.Contains(dir.Path, output);
+    }
+
+    [Fact]
+    public void ConfigCommand_WithConfigFile_PrintsResolvedPaths()
+    {
+        using var dir = new TempDirectory();
+        new InitCommand().Execute([], dir.Path);
+
+        var output = CaptureOutput(() => new ConfigCommand().Execute([], dir.Path));
+
+        Assert.DoesNotContain("not found, using defaults", output);
+        Assert.Contains(Path.Combine(dir.Path, "docs", "adr"), output);
+    }
+
+    [Fact]
+    public void ConfigCommand_Json_PrintsJsonObject()
+    {
+        using var dir = new TempDirectory();
+
+        var output = CaptureOutput(() => new ConfigCommand().Execute(["--json"], dir.Path));
+
+        Assert.Contains("\"configFileExists\": false", output);
+        Assert.Contains("\"adrDirectory\"", output);
+    }
+
+    [Fact]
     public void LintCommand_NoIssues_ReturnsZero()
     {
         using var dir = new TempDirectory();

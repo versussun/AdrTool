@@ -60,13 +60,14 @@ public sealed partial class AdrService(string basePath, AdrConfig config)
     }
 
     /// <summary>Reads the full content of the ADR with the given number.</summary>
-    public string GetContent(int number)
+    public string GetContent(int number) => File.ReadAllText(GetFilePath(number));
+
+    /// <summary>Resolves the file path of the ADR with the given number.</summary>
+    public string GetFilePath(int number)
     {
         var adrDirectory = config.ResolveAdrDirectory(basePath);
-        var file = FindByNumber(adrDirectory, number)
+        return FindByNumber(adrDirectory, number)
             ?? throw new AdrToolException($"No ADR found with number {number}");
-
-        return File.ReadAllText(file);
     }
 
     /// <summary>

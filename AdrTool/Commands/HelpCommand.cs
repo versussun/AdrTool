@@ -25,12 +25,14 @@ public sealed class HelpCommand : ICommand
               adr reject <n>                                Mark ADR number <n> as Rejected
               adr link <n> <m> [--type=related|amends]     Record a relationship between two ADRs (default: related)
               adr show <n>                                  Print ADR number <n>'s content to stdout
+              adr edit <n>                                   Open ADR number <n> in $VISUAL/$EDITOR
               adr search <keyword>                          Search titles/content across all ADRs
               adr list [--tag=name] [--json]                List all ADRs, optionally filtered by tag, or as JSON
               adr template format                          Show available template placeholder tokens
               adr template copy                            Copy the default template to the configured templatePath
               adr dashboard [--recreate] [--check] [--tag=name]  Add new ADRs to index.md (--recreate rebuilds it; --check exits non-zero if stale)
               adr lint                                      Flag ADRs missing Status/Date, duplicate numbers, or dead supersede links
+              adr config [--json]                           Print the effective configuration (resolved paths)
 
             "--key=value" arguments are available in templates as "{{arg:key}}" (see "adr template format").
             "--tags=a,b" records comma-separated tags on an ADR, usable with "adr list --tag=" / "adr dashboard --tag=".
