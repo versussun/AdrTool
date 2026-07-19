@@ -59,4 +59,30 @@ public class CommandArgsTests
 
         Assert.Empty(CommandArgs.ParseTags(args));
     }
+
+    [Fact]
+    public void ExtractProfile_PullsProfileFlagOutOfArgs()
+    {
+        var (profile, remaining) = CommandArgs.ExtractProfile(["1", "--profile=rfc"]);
+
+        Assert.Equal("rfc", profile);
+        Assert.Equal(["1"], remaining);
+    }
+
+    [Fact]
+    public void ExtractProfile_WithNoProfileFlag_ReturnsNullAndUnchangedArgs()
+    {
+        var (profile, remaining) = CommandArgs.ExtractProfile(["Title", "--tags=a,b"]);
+
+        Assert.Null(profile);
+        Assert.Equal(["Title", "--tags=a,b"], remaining);
+    }
+
+    [Fact]
+    public void ExtractProfile_LeavesOtherArgsInOriginalOrder()
+    {
+        var (_, remaining) = CommandArgs.ExtractProfile(["Use", "--profile=rfc", "clean", "--author=Jane"]);
+
+        Assert.Equal(["Use", "clean", "--author=Jane"], remaining);
+    }
 }

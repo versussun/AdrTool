@@ -99,4 +99,87 @@ public class AdrConfigTests
         Assert.Equal("docs/adr", loaded.Path);
         Assert.True(File.Exists(Path.Combine(dir.Path, AdrConfig.FileName)));
     }
+
+    [Fact]
+    public void Load_ParsesProfiles()
+    {
+        using var dir = new TempDirectory();
+        File.WriteAllText(
+            Path.Combine(dir.Path, AdrConfig.FileName),
+            """
+            {
+              "path": "docs/adr",
+              "templatePath": "templates/default.md",
+              "profiles": {
+                "rfc": { "path": "docs/rfc", "templatePath": "templates/rfc.md" }
+              }
+            }
+            """);
+
+        var config = AdrConfig.Load(dir.Path);
+
+        Assert.NotNull(config.Profiles);
+        Assert.Equal("docs/rfc", config.Profiles["rfc"].Path);
+        Assert.Equal("templates/rfc.md", config.Profiles["rfc"].TemplatePath);
+    }
+
+    [Fact]
+    public void ForProfile_WithNullName_ReturnsSameInstance()
+    {
+        var config = new AdrConfig { Path = "docs/adr" };
+
+        Assert.Same(config, config.ForProfile(null));
+    }
+
+    [Fact]
+    public void ForProfile_OverridesFieldsSetOnTheProfile()
+    {
+        var config = new AdrConfig
+        {
+            Path = "docs/adr",
+            TemplatePath = "templates/default.md",
+            DashboardPath = "docs/adr/index.md",
+            Profiles = new Dictionary<string, AdrProfileConfig>
+            {
+                ["rfc"] = new() { Path = "docs/rfc", TemplatePath = "templates/rfc.md" },
+            },
+        };
+
+        var resolved = config.ForProfile("rfc");
+
+        Assert.Equal("docs/rfc", resolved.Path);
+        Assert.Equal("templates/rfc.md", resolved.TemplatePath);
+        Assert.Equal("docs/adr/index.md", resolved.DashboardPath); // falls back: profile didn't set it
+    }
+
+    [Fact]
+    public void ForProfile_NameLookupIsCaseInsensitive()
+    {
+        var config = new AdrConfig
+        {
+            Profiles = new Dictionary<string, AdrProfileConfig> { ["RFC"] = new() { Path = "docs/rfc" } },
+        };
+
+        Assert.Equal("docs/rfc", config.ForProfile("rfc").Path);
+    }
+
+    [Fact]
+    public void ForProfile_WithUnknownName_Throws()
+    {
+        var config = new AdrConfig
+        {
+            Profiles = new Dictionary<string, AdrProfileConfig> { ["rfc"] = new() { Path = "docs/rfc" } },
+        };
+
+        var ex = Assert.Throws<AdrToolException>(() => config.ForProfile("missing"));
+        Assert.Contains("rfc", ex.Message);
+    }
+
+    [Fact]
+    public void ForProfile_WithNoProfilesConfigured_Throws()
+    {
+        var config = new AdrConfig();
+
+        Assert.Throws<AdrToolException>(() => config.ForProfile("rfc"));
+    }
 }

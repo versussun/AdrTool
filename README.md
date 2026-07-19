@@ -154,11 +154,13 @@ adr list --tag=security
 | `adr lint` | Flag ADRs missing `Status`/`Date`, duplicate numbers, or supersede links pointing at nonexistent files; exits non-zero if any issues are found |
 | `adr renumber [--check]` | Fix numbering gaps/duplicates by reassigning sequential numbers, renaming files and rewriting cross-references to match; `--check` reports what would change and exits non-zero without writing |
 | `adr install-hooks [--dashboard-check] [--force]` | Install a git `pre-commit` hook that runs `adr lint` (and, with `--dashboard-check`, `adr dashboard --check`); refuses to overwrite an existing hook unless `--force` is given |
-| `adr config [--json]` | Print the effective configuration — resolved ADR directory, template path, and dashboard path — after applying `adr.config.json` on top of the defaults |
+| `adr config [--json]` | Print the effective configuration — resolved ADR directory, template path, dashboard path, and configured profiles — after applying `adr.config.json` on top of the defaults |
 | `adr completion <bash\|zsh>` | Print a shell completion script for subcommands and their flags |
 | `adr help` / `adr -h` / `adr --help` | Show usage |
 
 `--key=value` arguments can appear anywhere in `new`/`supersede` (interspersed with the title words) and are available in templates as `{{arg:key}}`. `--tags=a,b` is a first-class one of these: it records a comma-separated tag list on the ADR (see [Tags](#tags)).
+
+`--profile=name` works on any command and switches to a named profile's `path`/`templatePath`/`dashboardPath` (see [Profiles](#profiles)).
 
 ## Configuration
 
@@ -177,8 +179,41 @@ Optional `adr.config.json` in the folder you run `adr` from:
 | `path` | Directory (relative to the current folder) where ADRs are stored. Defaults to the current folder. |
 | `templatePath` | Template file (relative to the current folder) used for new ADRs. Defaults to the tool's built-in template. |
 | `dashboardPath` | File (relative to the current folder) where `adr dashboard` writes its output. Defaults to `index.md` inside the ADR directory. |
+| `profiles` | Named overrides of `path`/`templatePath`/`dashboardPath`, selected via `--profile=name` on any command. See [Profiles](#profiles). |
 
 If `templatePath` is set but the file doesn't exist, `adr new` warns and offers to copy the default template there interactively (or run `adr template copy` to do it non-interactively).
+
+## Profiles
+
+Profiles give you multiple independent sets of ADRs — different templates, different directories — in one repo, e.g. architecture decisions vs. RFCs vs. runbooks:
+
+```json
+{
+  "path": "docs/adr",
+  "templatePath": "templates/adr-template.md",
+  "profiles": {
+    "rfc": {
+      "path": "docs/rfc",
+      "templatePath": "templates/rfc-template.md"
+    },
+    "runbook": {
+      "path": "docs/runbooks",
+      "templatePath": "templates/runbook-template.md",
+      "dashboardPath": "docs/runbooks/index.md"
+    }
+  }
+}
+```
+
+Each entry under `profiles` can override `path`, `templatePath`, and `dashboardPath`; anything it leaves unset falls back to the top-level value. Select one with `--profile=name` on any command:
+
+```
+adr new "Adopt event sourcing" --profile=rfc
+adr list --profile=rfc
+adr dashboard --profile=rfc
+```
+
+Without `--profile`, commands use the top-level configuration as before — existing single-template setups are unaffected. Order numbers are independent per profile: `docs/adr` and `docs/rfc` each start at `0000001` and count up on their own. `adr config` (with or without `--json`) lists the profiles currently configured.
 
 ## Filenames
 

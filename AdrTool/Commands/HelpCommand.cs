@@ -39,11 +39,13 @@ public sealed class HelpCommand : ICommand
 
             "--key=value" arguments are available in templates as "{{arg:key}}" (see "adr template format").
             "--tags=a,b" records comma-separated tags on an ADR, usable with "adr list --tag=" / "adr dashboard --tag=".
+            "--profile=name" works on any command, switching to a named profile's path/templatePath/dashboardPath.
             "adr lint", "adr dashboard --check", and "adr renumber --check" exit non-zero on failure, for use as CI gates.
 
             Configuration (adr.config.json in the current folder):
               path          Directory where ADRs are stored (default: current folder)
               templatePath  Template file used for new ADRs (default: built-in template)
+              profiles      Named overrides of path/templatePath/dashboardPath, selected via --profile=name
             """);
     }
 }

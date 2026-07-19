@@ -25,4 +25,24 @@ public static class CommandArgs
         => customArgs.TryGetValue("tags", out var value)
             ? value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             : [];
+
+    /// <summary>
+    /// Extracts a global "--profile=name" flag (usable on any command) from raw CLI args, returning
+    /// the profile name (if any) and the remaining args with that flag removed.
+    /// </summary>
+    public static (string? Profile, string[] RemainingArgs) ExtractProfile(string[] args)
+    {
+        string? profile = null;
+        var remaining = new List<string>(args.Length);
+
+        foreach (var arg in args)
+        {
+            if (arg.StartsWith("--profile=", StringComparison.Ordinal))
+                profile = arg["--profile=".Length..];
+            else
+                remaining.Add(arg);
+        }
+
+        return (profile, remaining.ToArray());
+    }
 }

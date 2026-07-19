@@ -22,18 +22,21 @@ public sealed class ConfigCommand(AdrConfig config, string basePath) : ICommand
         bool ConfigFileExists,
         string AdrDirectory,
         string? TemplatePath,
-        string DashboardPath);
+        string DashboardPath,
+        IReadOnlyList<string> Profiles);
 
     public int Execute(string[] args)
     {
         var configFile = Path.Combine(basePath, AdrConfig.FileName);
+        var profiles = config.Profiles is { Count: > 0 } ? config.Profiles.Keys.Order().ToList() : [];
 
         var resolved = new ResolvedConfig(
             ConfigFile: configFile,
             ConfigFileExists: File.Exists(configFile),
             AdrDirectory: config.ResolveAdrDirectory(basePath),
             TemplatePath: config.ResolveTemplatePath(basePath),
-            DashboardPath: config.ResolveDashboardPath(basePath));
+            DashboardPath: config.ResolveDashboardPath(basePath),
+            Profiles: profiles);
 
         if (args.Contains("--json"))
         {
@@ -45,6 +48,7 @@ public sealed class ConfigCommand(AdrConfig config, string basePath) : ICommand
         Console.WriteLine($"ADR directory:  {resolved.AdrDirectory}");
         Console.WriteLine($"Template path:  {resolved.TemplatePath ?? "(built-in default)"}");
         Console.WriteLine($"Dashboard path: {resolved.DashboardPath}");
+        Console.WriteLine($"Profiles:       {(resolved.Profiles.Count == 0 ? "(none configured)" : string.Join(", ", resolved.Profiles))}");
 
         return 0;
     }
