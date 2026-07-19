@@ -1,0 +1,15 @@
+/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/AdrTool
+/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/AdrTool.deps.json
+/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/AdrTool.runtimeconfig.json
+/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/AdrTool.dll
+/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/AdrTool.pdb
+/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/obj/Release/net11.0/AdrTool.GeneratedMSBuildEditorConfig.editorconfig
+/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/obj/Release/net11.0/AdrTool.AssemblyInfoInputs.cache
+/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/obj/Release/net11.0/AdrTool.AssemblyInfo.cs
+/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/obj/Release/net11.0/AdrTool.csproj.CoreCompileInputs.cache
+/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/obj/Release/net11.0/AdrTool.dll
+/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/obj/Release/net11.0/refint/AdrTool.dll
+/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/obj/Release/net11.0/AdrTool.pdb
+/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/obj/Release/net11.0/AdrTool.genruntimeconfig.cache
+/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/obj/Release/net11.0/ref/AdrTool.dll
+/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/templates/default.md

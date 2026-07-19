@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>AdrTool</id>
+    <version>0.1.0</version>
+    <authors>AdrTool</authors>
+    <description>Package Description</description>
+    <packageTypes>
+      <packageType name="DotnetTool" />
+    </packageTypes>
+    <repository type="git" />
+    <contentFiles>
+      <files include="any/net11.0/templates/default.md" buildAction="Content" />
+    </contentFiles>
+  </metadata>
+  <files>
+    <file src="/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/obj/Release/net11.0/DotnetToolSettings.xml" target="tools/net11.0/any/DotnetToolSettings.xml" />
+    <file src="/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/publish/AdrTool.deps.json" target="tools/net11.0/any/AdrTool.deps.json" />
+    <file src="/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/publish/AdrTool.dll" target="tools/net11.0/any/AdrTool.dll" />
+    <file src="/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/publish/AdrTool.pdb" target="tools/net11.0/any/AdrTool.pdb" />
+    <file src="/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/publish/AdrTool.runtimeconfig.json" target="tools/net11.0/any/AdrTool.runtimeconfig.json" />
+    <file src="/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/bin/Release/net11.0/publish/templates/default.md" target="tools/net11.0/any/templates/default.md" />
+    <file src="/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/templates/default.md" target="content/templates/default.md" />
+    <file src="/Users/viacheslavlabunets/Documents/AdrTool/AdrTool/templates/default.md" target="contentFiles/any/net11.0/templates/default.md" />
+  </files>
+</package>
