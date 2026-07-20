@@ -402,6 +402,22 @@ public class CommandsTests
         Assert.Contains("not found, using defaults", output);
         Assert.Contains("(built-in default)", output);
         Assert.Contains(dir.Path, output);
+        Assert.Contains("File name format: {{Number}}-{{Slug}}", output);
+        Assert.Contains("Number padding:   7", output);
+    }
+
+    [Fact]
+    public void ConfigCommand_WithCustomFileNameFormat_PrintsConfiguredValues()
+    {
+        using var dir = new TempDirectory();
+        File.WriteAllText(
+            Path.Combine(dir.Path, AdrConfig.FileName),
+            """{ "fileNameFormat": "ADR{{Number}}-{{Slug:pascal}}", "numberPadding": 5 }""");
+
+        var output = CaptureOutput(() => new ConfigCommand(AdrConfig.Load(dir.Path), dir.Path).Execute([]));
+
+        Assert.Contains("File name format: ADR{{Number}}-{{Slug:pascal}}", output);
+        Assert.Contains("Number padding:   5", output);
     }
 
     [Fact]

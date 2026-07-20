@@ -14,7 +14,25 @@ public class AdrConfigTests
         Assert.Null(config.Path);
         Assert.Null(config.TemplatePath);
         Assert.Null(config.DashboardPath);
+        Assert.Null(config.FileNameFormat);
+        Assert.Null(config.NumberPadding);
     }
+
+    [Fact]
+    public void ResolveFileNameFormat_DefaultsToNumberDashSlug()
+        => Assert.Equal("{{Number}}-{{Slug}}", new AdrConfig().ResolveFileNameFormat());
+
+    [Fact]
+    public void ResolveFileNameFormat_UsesConfiguredValue()
+        => Assert.Equal("ADR{{Number}}-{{Slug}}", new AdrConfig { FileNameFormat = "ADR{{Number}}-{{Slug}}" }.ResolveFileNameFormat());
+
+    [Fact]
+    public void ResolveNumberPadding_DefaultsToSeven()
+        => Assert.Equal(7, new AdrConfig().ResolveNumberPadding());
+
+    [Fact]
+    public void ResolveNumberPadding_UsesConfiguredValue()
+        => Assert.Equal(5, new AdrConfig { NumberPadding = 5 }.ResolveNumberPadding());
 
     [Fact]
     public void Load_ParsesConfiguredProperties()
@@ -150,6 +168,41 @@ public class AdrConfigTests
         Assert.Equal("docs/rfc", resolved.Path);
         Assert.Equal("templates/rfc.md", resolved.TemplatePath);
         Assert.Equal("docs/adr/index.md", resolved.DashboardPath); // falls back: profile didn't set it
+    }
+
+    [Fact]
+    public void ForProfile_OverridesFileNameFormatAndNumberPadding()
+    {
+        var config = new AdrConfig
+        {
+            FileNameFormat = "{{Number}}-{{Slug}}",
+            NumberPadding = 7,
+            Profiles = new Dictionary<string, AdrProfileConfig>
+            {
+                ["rfc"] = new() { FileNameFormat = "RFC{{Number}}-{{Slug:pascal}}", NumberPadding = 4 },
+            },
+        };
+
+        var resolved = config.ForProfile("rfc");
+
+        Assert.Equal("RFC{{Number}}-{{Slug:pascal}}", resolved.FileNameFormat);
+        Assert.Equal(4, resolved.NumberPadding);
+    }
+
+    [Fact]
+    public void ForProfile_FallsBackToTopLevelFileNameFormatAndNumberPadding()
+    {
+        var config = new AdrConfig
+        {
+            FileNameFormat = "{{Number}}-{{Slug}}",
+            NumberPadding = 7,
+            Profiles = new Dictionary<string, AdrProfileConfig> { ["rfc"] = new() { Path = "docs/rfc" } },
+        };
+
+        var resolved = config.ForProfile("rfc");
+
+        Assert.Equal("{{Number}}-{{Slug}}", resolved.FileNameFormat);
+        Assert.Equal(7, resolved.NumberPadding);
     }
 
     [Fact]

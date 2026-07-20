@@ -9,7 +9,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>adr</ToolCommandName>
     <PackageId>AdrTool</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Description>A CLI tool for creating and managing Architecture Decision Records (ADRs) from a customizable template.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Authors>versussun</Authors>

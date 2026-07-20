@@ -23,6 +23,8 @@ public sealed class ConfigCommand(AdrConfig config, string basePath) : ICommand
         string AdrDirectory,
         string? TemplatePath,
         string DashboardPath,
+        string FileNameFormat,
+        int NumberPadding,
         IReadOnlyList<string> Profiles);
 
     public int Execute(string[] args)
@@ -36,6 +38,8 @@ public sealed class ConfigCommand(AdrConfig config, string basePath) : ICommand
             AdrDirectory: config.ResolveAdrDirectory(basePath),
             TemplatePath: config.ResolveTemplatePath(basePath),
             DashboardPath: config.ResolveDashboardPath(basePath),
+            FileNameFormat: config.ResolveFileNameFormat(),
+            NumberPadding: config.ResolveNumberPadding(),
             Profiles: profiles);
 
         if (args.Contains("--json"))
@@ -44,11 +48,13 @@ public sealed class ConfigCommand(AdrConfig config, string basePath) : ICommand
             return 0;
         }
 
-        Console.WriteLine($"Config file:    {resolved.ConfigFile}{(resolved.ConfigFileExists ? "" : " (not found, using defaults)")}");
-        Console.WriteLine($"ADR directory:  {resolved.AdrDirectory}");
-        Console.WriteLine($"Template path:  {resolved.TemplatePath ?? "(built-in default)"}");
-        Console.WriteLine($"Dashboard path: {resolved.DashboardPath}");
-        Console.WriteLine($"Profiles:       {(resolved.Profiles.Count == 0 ? "(none configured)" : string.Join(", ", resolved.Profiles))}");
+        Console.WriteLine($"Config file:      {resolved.ConfigFile}{(resolved.ConfigFileExists ? "" : " (not found, using defaults)")}");
+        Console.WriteLine($"ADR directory:    {resolved.AdrDirectory}");
+        Console.WriteLine($"Template path:    {resolved.TemplatePath ?? "(built-in default)"}");
+        Console.WriteLine($"Dashboard path:   {resolved.DashboardPath}");
+        Console.WriteLine($"File name format: {resolved.FileNameFormat}");
+        Console.WriteLine($"Number padding:   {resolved.NumberPadding}");
+        Console.WriteLine($"Profiles:         {(resolved.Profiles.Count == 0 ? "(none configured)" : string.Join(", ", resolved.Profiles))}");
 
         return 0;
     }

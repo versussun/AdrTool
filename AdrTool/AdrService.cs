@@ -19,7 +19,8 @@ public sealed record AdrRenumberChange(int OldNumber, int NewNumber, string OldF
 /// <summary>Creates and inspects ADR documents based on the configured template.</summary>
 public sealed partial class AdrService(string basePath, AdrConfig config)
 {
-    public const int NumberPadding = 7;
+    /// <summary>The zero-padding width in effect for this service: config.NumberPadding, or 7 by default.</summary>
+    public int NumberPadding => config.ResolveNumberPadding();
 
     /// <summary>
     /// Creates a new ADR from the template and returns the path of the created file.
@@ -117,7 +118,7 @@ public sealed partial class AdrService(string basePath, AdrConfig config)
 
         var number = NextNumber(adrDirectory);
         var numberText = number.ToString($"D{NumberPadding}", CultureInfo.InvariantCulture);
-        var filePath = Path.Combine(adrDirectory, $"{numberText}-{Slugify(title)}.md");
+        var filePath = Path.Combine(adrDirectory, BuildFileName(numberText, title));
 
         if (File.Exists(filePath))
             throw new AdrToolException($"ADR already exists: {filePath}");
@@ -157,8 +158,8 @@ public sealed partial class AdrService(string basePath, AdrConfig config)
         var records = new List<AdrRecord>();
         foreach (var file in Directory.EnumerateFiles(adrDirectory, "*.md"))
         {
-            var match = LeadingNumber().Match(Path.GetFileName(file));
-            if (!match.Success || !int.TryParse(match.Groups[1].Value, out var number))
+            var match = NumberPrefixRegex.Match(Path.GetFileName(file));
+            if (!match.Success || !int.TryParse(match.Groups["number"].Value, out var number))
                 continue;
 
             var content = File.ReadAllText(file);
@@ -181,8 +182,8 @@ public sealed partial class AdrService(string basePath, AdrConfig config)
         var results = new List<AdrSearchResult>();
         foreach (var file in Directory.EnumerateFiles(adrDirectory, "*.md"))
         {
-            var match = LeadingNumber().Match(Path.GetFileName(file));
-            if (!match.Success || !int.TryParse(match.Groups[1].Value, out var number))
+            var match = NumberPrefixRegex.Match(Path.GetFileName(file));
+            if (!match.Success || !int.TryParse(match.Groups["number"].Value, out var number))
                 continue;
 
             var content = File.ReadAllText(file);
@@ -219,8 +220,8 @@ public sealed partial class AdrService(string basePath, AdrConfig config)
         var entries = new List<(int Number, string FilePath, string Content)>();
         foreach (var file in Directory.EnumerateFiles(adrDirectory, "*.md"))
         {
-            var match = LeadingNumber().Match(Path.GetFileName(file));
-            if (!match.Success || !int.TryParse(match.Groups[1].Value, out var number))
+            var match = NumberPrefixRegex.Match(Path.GetFileName(file));
+            if (!match.Success || !int.TryParse(match.Groups["number"].Value, out var number))
                 continue;
 
             entries.Add((number, file, File.ReadAllText(file)));
@@ -274,8 +275,8 @@ public sealed partial class AdrService(string basePath, AdrConfig config)
         foreach (var file in Directory.EnumerateFiles(adrDirectory, "*.md"))
         {
             var fileName = Path.GetFileName(file);
-            var match = LeadingNumber().Match(fileName);
-            if (!match.Success || !int.TryParse(match.Groups[1].Value, out var number))
+            var match = NumberPrefixRegex.Match(fileName);
+            if (!match.Success || !int.TryParse(match.Groups["number"].Value, out var number))
                 continue;
 
             entries.Add((number, fileName));
@@ -295,7 +296,7 @@ public sealed partial class AdrService(string basePath, AdrConfig config)
                 continue;
 
             var newNumberText = newNumber.ToString($"D{NumberPadding}", CultureInfo.InvariantCulture);
-            var newFileName = $"{newNumberText}-{StripLeadingNumber(entry.FileName)}";
+            var newFileName = $"{FormatParts.Prefix}{newNumberText}{FormatParts.Separator}{StripLeadingNumber(entry.FileName)}";
             changes.Add(new AdrRenumberChange(entry.Number, newNumber, entry.FileName, newFileName));
         }
 
@@ -377,11 +378,11 @@ public sealed partial class AdrService(string basePath, AdrConfig config)
         return changes;
     }
 
-    /// <summary>Strips a filename's leading "NNNNNNN-" order-number prefix, leaving the slug + extension.</summary>
-    private static string StripLeadingNumber(string fileName)
+    /// <summary>Strips a filename's leading prefix/order-number/separator (per fileNameFormat), leaving the slug + extension.</summary>
+    private string StripLeadingNumber(string fileName)
     {
-        var match = LeadingNumber().Match(fileName);
-        return fileName[match.Length..].TrimStart('-');
+        var match = NumberPrefixRegex.Match(fileName);
+        return fileName[match.Length..];
     }
 
     /// <summary>Rewrites the padded order number at the start of an ADR's first heading line, if present.</summary>
@@ -543,8 +544,7 @@ public sealed partial class AdrService(string basePath, AdrConfig config)
 
         var number = NextNumber(adrDirectory);
         var numberText = number.ToString($"D{NumberPadding}", CultureInfo.InvariantCulture);
-        var slug = Slugify(title);
-        var fileName = $"{numberText}-{slug}.md";
+        var fileName = BuildFileName(numberText, title);
         var filePath = Path.Combine(adrDirectory, fileName);
 
         if (File.Exists(filePath))
@@ -559,28 +559,28 @@ public sealed partial class AdrService(string basePath, AdrConfig config)
     /// <summary>
     /// Determines the next order number by scanning existing ADR files' leading number.
     /// </summary>
-    private static int NextNumber(string adrDirectory)
+    private int NextNumber(string adrDirectory)
     {
         var max = 0;
         foreach (var file in Directory.EnumerateFiles(adrDirectory, "*.md"))
         {
-            var match = LeadingNumber().Match(Path.GetFileName(file));
-            if (match.Success && int.TryParse(match.Groups[1].Value, out var value) && value > max)
+            var match = NumberPrefixRegex.Match(Path.GetFileName(file));
+            if (match.Success && int.TryParse(match.Groups["number"].Value, out var value) && value > max)
                 max = value;
         }
 
         return max + 1;
     }
 
-    private static string? FindByNumber(string adrDirectory, int number)
+    private string? FindByNumber(string adrDirectory, int number)
     {
         if (!Directory.Exists(adrDirectory))
             return null;
 
         foreach (var file in Directory.EnumerateFiles(adrDirectory, "*.md"))
         {
-            var match = LeadingNumber().Match(Path.GetFileName(file));
-            if (match.Success && int.TryParse(match.Groups[1].Value, out var value) && value == number)
+            var match = NumberPrefixRegex.Match(Path.GetFileName(file));
+            if (match.Success && int.TryParse(match.Groups["number"].Value, out var value) && value == number)
                 return file;
         }
 
@@ -746,6 +746,71 @@ public sealed partial class AdrService(string basePath, AdrConfig config)
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
+    /// <summary>The literal text surrounding the "{{Number}}"/"{{Slug}}" tokens in the configured fileNameFormat.</summary>
+    private sealed record FileNameFormatParts(string Prefix, string Separator, string? SlugFormat);
+
+    private FileNameFormatParts FormatParts => _formatParts ??= ComputeFormatParts(config.ResolveFileNameFormat());
+    private FileNameFormatParts? _formatParts;
+
+    /// <summary>
+    /// Matches the "{{Number}}" (and preceding literal prefix/following literal separator) portion of
+    /// a filename built from the configured fileNameFormat, capturing the number as group "number".
+    /// </summary>
+    private Regex NumberPrefixRegex => _numberPrefixRegex ??= new Regex(
+        $"^{Regex.Escape(FormatParts.Prefix)}(?<number>\\d+){Regex.Escape(FormatParts.Separator)}", RegexOptions.IgnoreCase);
+    private Regex? _numberPrefixRegex;
+
+    /// <summary>
+    /// Splits a fileNameFormat into the literal text before "{{Number}}", the literal text between
+    /// "{{Number}}" and "{{Slug}}", and "{{Slug}}"'s case format (e.g. "pascal" from "{{Slug:pascal}}").
+    /// </summary>
+    private static FileNameFormatParts ComputeFormatParts(string format)
+    {
+        Match? numberMatch = null;
+        Match? slugMatch = null;
+        foreach (Match match in Token().Matches(format))
+        {
+            var name = match.Groups["name"].Value;
+            if (string.Equals(name, "number", StringComparison.OrdinalIgnoreCase))
+                numberMatch = match;
+            else if (string.Equals(name, "slug", StringComparison.OrdinalIgnoreCase))
+                slugMatch = match;
+            else
+                throw new AdrToolException($"Unknown token '{{{{{name}}}}}' in fileNameFormat. Supported tokens: {{{{Number}}}}, {{{{Slug}}}}.");
+        }
+
+        if (numberMatch is null)
+            throw new AdrToolException("fileNameFormat must include a {{Number}} token.");
+        if (slugMatch is null)
+            throw new AdrToolException("fileNameFormat must include a {{Slug}} token.");
+        if (slugMatch.Index < numberMatch.Index)
+            throw new AdrToolException("fileNameFormat must place {{Number}} before {{Slug}}.");
+
+        var prefix = format[..numberMatch.Index];
+        var separator = format[(numberMatch.Index + numberMatch.Length)..slugMatch.Index];
+        var slugFormat = slugMatch.Groups["format"].Success ? slugMatch.Groups["format"].Value.Trim() : null;
+        return new FileNameFormatParts(prefix, separator, slugFormat);
+    }
+
+    /// <summary>Builds a new ADR's filename (including the ".md" extension) from the configured fileNameFormat.</summary>
+    private string BuildFileName(string numberText, string title)
+    {
+        var slug = FormatSlug(Slugify(title), FormatParts.SlugFormat);
+        return $"{FormatParts.Prefix}{numberText}{FormatParts.Separator}{slug}.md";
+    }
+
+    /// <summary>Applies a "{{Slug:xxx}}" case variant to an already-lowercase, underscore-separated slug.</summary>
+    private static string FormatSlug(string slug, string? caseFormat) => caseFormat?.ToLowerInvariant() switch
+    {
+        null => slug,
+        "pascal" or "title" => string.Join('_', slug
+            .Split('_', StringSplitOptions.RemoveEmptyEntries)
+            .Select(word => char.ToUpperInvariant(word[0]) + word[1..])),
+        "kebab" => slug.Replace('_', '-'),
+        "upper" => slug.ToUpperInvariant(),
+        _ => throw new AdrToolException($"Unknown slug format '{caseFormat}' in fileNameFormat. Supported: pascal, kebab, upper."),
+    };
+
     /// <summary>Turns a free-form title into a lowercase, underscore-separated file slug.</summary>
     private static string Slugify(string title)
     {
@@ -773,9 +838,6 @@ public sealed partial class AdrService(string basePath, AdrConfig config)
 
     [GeneratedRegex(@"\{\{\s*(?<name>\w+)\s*(?::\s*(?<format>[^}]*))?\s*\}\}", RegexOptions.IgnoreCase)]
     private static partial Regex Token();
-
-    [GeneratedRegex(@"^(\d+)")]
-    private static partial Regex LeadingNumber();
 
     [GeneratedRegex(@"^(?:ADR\s+)?\d+[.:]?\s*(?<title>.+)$", RegexOptions.IgnoreCase)]
     private static partial Regex HeadingNumberPrefix();

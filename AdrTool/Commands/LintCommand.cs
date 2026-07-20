@@ -19,7 +19,7 @@ public sealed class LintCommand(AdrService service) : ICommand
         }
 
         foreach (var issue in issues)
-            Console.WriteLine($"{issue.Number.ToString($"D{AdrService.NumberPadding}")}  {Path.GetFileName(issue.FilePath)}  {issue.Message}");
+            Console.WriteLine($"{issue.Number.ToString($"D{service.NumberPadding}")}  {Path.GetFileName(issue.FilePath)}  {issue.Message}");
 
         Console.Error.WriteLine($"{issues.Count} issue(s) found.");
         return 1;

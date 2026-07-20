@@ -30,7 +30,7 @@ public sealed class DashboardCommand(AdrService service) : ICommand
                 return 0;
             }
 
-            var numbers = string.Join(", ", missing.Select(n => n.ToString($"D{AdrService.NumberPadding}")));
+            var numbers = string.Join(", ", missing.Select(n => n.ToString($"D{service.NumberPadding}")));
             Console.Error.WriteLine($"Dashboard is stale: {missing.Count} ADR(s) not yet added: {numbers}");
             return 1;
         }

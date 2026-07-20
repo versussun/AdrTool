@@ -21,11 +21,26 @@ public sealed class AdrConfig
     [JsonPropertyName("dashboardPath")]
     public string? DashboardPath { get; set; }
 
+    /// <summary>
+    /// Filename pattern for new ADRs. Supports a "{{Number}}" token (the padded order number) and a
+    /// "{{Slug}}" token (the slugified title), which may carry a case variant, e.g. "{{Slug:pascal}}"
+    /// or "{{Slug:kebab}}". "{{Number}}" must appear before "{{Slug}}". Defaults to "{{Number}}-{{Slug}}"
+    /// (e.g. "0000001-use_clean_architecture.md").
+    /// </summary>
+    [JsonPropertyName("fileNameFormat")]
+    public string? FileNameFormat { get; set; }
+
+    /// <summary>Zero-padding width for order numbers in filenames and command output. Defaults to 7.</summary>
+    [JsonPropertyName("numberPadding")]
+    public int? NumberPadding { get; set; }
+
     /// <summary>Named override groups, selected via "--profile=name". Each overrides Path/TemplatePath/DashboardPath.</summary>
     [JsonPropertyName("profiles")]
     public Dictionary<string, AdrProfileConfig>? Profiles { get; set; }
 
     public const string FileName = "adr.config.json";
+    public const string DefaultFileNameFormat = "{{Number}}-{{Slug}}";
+    public const int DefaultNumberPadding = 7;
     private const string DefaultDashboardFileName = "index.md";
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
@@ -83,6 +98,12 @@ public sealed class AdrConfig
             ? System.IO.Path.Combine(ResolveAdrDirectory(basePath), DefaultDashboardFileName)
             : System.IO.Path.GetFullPath(System.IO.Path.Combine(basePath, DashboardPath));
 
+    /// <summary>Effective filename pattern: <see cref="FileNameFormat"/> if set, otherwise <see cref="DefaultFileNameFormat"/>.</summary>
+    public string ResolveFileNameFormat() => FileNameFormat ?? DefaultFileNameFormat;
+
+    /// <summary>Effective order-number zero-padding width: <see cref="NumberPadding"/> if set, otherwise <see cref="DefaultNumberPadding"/>.</summary>
+    public int ResolveNumberPadding() => NumberPadding ?? DefaultNumberPadding;
+
     /// <summary>
     /// Returns a config with the named profile's Path/TemplatePath/DashboardPath applied on top of
     /// this config's values (a profile that leaves a field unset falls back to this config's value).
@@ -118,6 +139,8 @@ public sealed class AdrConfig
             Path = profile.Path ?? Path,
             TemplatePath = profile.TemplatePath ?? TemplatePath,
             DashboardPath = profile.DashboardPath ?? DashboardPath,
+            FileNameFormat = profile.FileNameFormat ?? FileNameFormat,
+            NumberPadding = profile.NumberPadding ?? NumberPadding,
             Profiles = Profiles,
         };
     }
@@ -137,4 +160,12 @@ public sealed class AdrProfileConfig
     /// <summary>File (relative to the base path) where this profile's dashboard is written.</summary>
     [JsonPropertyName("dashboardPath")]
     public string? DashboardPath { get; set; }
+
+    /// <summary>This profile's filename pattern for new ADRs. See <see cref="AdrConfig.FileNameFormat"/>.</summary>
+    [JsonPropertyName("fileNameFormat")]
+    public string? FileNameFormat { get; set; }
+
+    /// <summary>This profile's order-number zero-padding width. See <see cref="AdrConfig.NumberPadding"/>.</summary>
+    [JsonPropertyName("numberPadding")]
+    public int? NumberPadding { get; set; }
 }

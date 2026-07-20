@@ -22,7 +22,7 @@ public sealed class SearchCommand(AdrService service) : ICommand
         foreach (var result in results)
         {
             var record = result.Record;
-            Console.WriteLine($"{record.Number.ToString($"D{AdrService.NumberPadding}")}  {record.Status,-20}  {record.Title}");
+            Console.WriteLine($"{record.Number.ToString($"D{service.NumberPadding}")}  {record.Status,-20}  {record.Title}");
 
             foreach (var line in result.MatchingLines.Where(l => !string.IsNullOrWhiteSpace(l)).Take(3))
                 Console.WriteLine($"    {line.Trim()}");

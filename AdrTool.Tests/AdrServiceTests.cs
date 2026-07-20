@@ -17,6 +17,95 @@ public class AdrServiceTests
     }
 
     [Fact]
+    public void CreateNew_WithCustomFileNameFormat_AppliesPrefixPaddingAndSlugCase()
+    {
+        using var dir = new TempDirectory();
+        var config = new AdrConfig { FileNameFormat = "ADR{{Number}}-{{Slug:pascal}}", NumberPadding = 5 };
+        var service = new AdrService(dir.Path, config);
+
+        var path = service.CreateNew("Use Clean Architecture!");
+
+        Assert.Equal("ADR00001-Use_Clean_Architecture.md", Path.GetFileName(path));
+    }
+
+    [Fact]
+    public void CreateNew_WithCustomFileNameFormat_RoundTripsThroughListAndFindByNumber()
+    {
+        using var dir = new TempDirectory();
+        var config = new AdrConfig { FileNameFormat = "ADR{{Number}}-{{Slug:kebab}}", NumberPadding = 3 };
+        var service = new AdrService(dir.Path, config);
+        service.CreateNew("Use Clean Architecture");
+
+        var records = service.ListAll();
+        var updated = service.SetStatus(1, "Accepted");
+
+        Assert.Single(records);
+        Assert.Equal(1, records[0].Number);
+        Assert.Equal("ADR001-use-clean-architecture.md", Path.GetFileName(updated));
+    }
+
+    [Theory]
+    [InlineData("{{Slug}}-{{Number}}")] // Slug before Number
+    [InlineData("{{Number}}-only")] // missing Slug token
+    [InlineData("just-{{Slug}}")] // missing Number token
+    [InlineData("{{Number}}-{{Slug}}-{{Foo}}")] // unknown token
+    public void CreateNew_WithInvalidFileNameFormat_Throws(string format)
+    {
+        using var dir = new TempDirectory();
+        var service = new AdrService(dir.Path, new AdrConfig { FileNameFormat = format });
+
+        Assert.Throws<AdrToolException>(() => service.CreateNew("Title"));
+    }
+
+    [Fact]
+    public void CreateNew_WithUnknownSlugCaseFormat_Throws()
+    {
+        using var dir = new TempDirectory();
+        var service = new AdrService(dir.Path, new AdrConfig { FileNameFormat = "{{Number}}-{{Slug:screaming}}" });
+
+        Assert.Throws<AdrToolException>(() => service.CreateNew("Title"));
+    }
+
+    [Fact]
+    public void CreateNew_WithUpperSlugFormat_UppercasesSlug()
+    {
+        using var dir = new TempDirectory();
+        var service = new AdrService(dir.Path, new AdrConfig { FileNameFormat = "{{Number}}-{{Slug:upper}}" });
+
+        var path = service.CreateNew("Use Clean Architecture");
+
+        Assert.Equal("0000001-USE_CLEAN_ARCHITECTURE.md", Path.GetFileName(path));
+    }
+
+    [Fact]
+    public void CreateInitialMetaAdr_WithCustomFileNameFormat_AppliesFormat()
+    {
+        using var dir = new TempDirectory();
+        var config = new AdrConfig { FileNameFormat = "ADR{{Number}}-{{Slug:pascal}}", NumberPadding = 5 };
+        var service = new AdrService(dir.Path, config);
+
+        var path = service.CreateInitialMetaAdr();
+
+        Assert.Equal("ADR00001-Record_Architecture_Decisions.md", Path.GetFileName(path));
+    }
+
+    [Fact]
+    public void CreateSuperseding_WithCustomFileNameFormat_LinksFilesByConfiguredNames()
+    {
+        using var dir = new TempDirectory();
+        var config = new AdrConfig { FileNameFormat = "ADR{{Number}}-{{Slug}}" };
+        var service = new AdrService(dir.Path, config);
+        var oldPath = service.CreateNew("Old decision");
+
+        var newPath = service.CreateSuperseding(1, "New decision");
+
+        Assert.Equal("ADR0000001-old_decision.md", Path.GetFileName(oldPath));
+        Assert.Equal("ADR0000002-new_decision.md", Path.GetFileName(newPath));
+        Assert.Contains($"Superseded by {Path.GetFileName(newPath)}", File.ReadAllText(oldPath));
+        Assert.Contains($"Supersedes: {Path.GetFileName(oldPath)}", File.ReadAllText(newPath));
+    }
+
+    [Fact]
     public void CreateNew_IncrementsNumberAcrossCalls()
     {
         using var dir = new TempDirectory();
@@ -373,6 +462,19 @@ public class AdrServiceTests
     }
 
     [Fact]
+    public void Search_WithCustomFileNameFormat_StillRecognizesAdrFiles()
+    {
+        using var dir = new TempDirectory();
+        var service = new AdrService(dir.Path, new AdrConfig { FileNameFormat = "ADR{{Number}}-{{Slug}}" });
+        service.CreateNew("Use PostgreSQL for storage");
+
+        var results = service.Search("PostgreSQL");
+
+        Assert.Single(results);
+        Assert.Equal(1, results[0].Record.Number);
+    }
+
+    [Fact]
     public void Search_ReturnsMatchingContentLines()
     {
         using var dir = new TempDirectory();
@@ -415,6 +517,17 @@ public class AdrServiceTests
     {
         using var dir = new TempDirectory();
         var service = new AdrService(dir.Path, new AdrConfig());
+        service.CreateNew("First");
+        service.CreateSuperseding(1, "Second");
+
+        Assert.Empty(service.Lint());
+    }
+
+    [Fact]
+    public void Lint_WithCustomFileNameFormat_StillFollowsSupersedeLinks()
+    {
+        using var dir = new TempDirectory();
+        var service = new AdrService(dir.Path, new AdrConfig { FileNameFormat = "ADR{{Number}}-{{Slug}}" });
         service.CreateNew("First");
         service.CreateSuperseding(1, "Second");
 
@@ -571,6 +684,22 @@ public class AdrServiceTests
         Assert.Equal("0000001-duplicate.md", Path.GetFileName(files[0]));
         Assert.Equal("0000002-first.md", Path.GetFileName(files[1]));
         Assert.Contains("# 0000002. First", File.ReadAllText(files[1]));
+    }
+
+    [Fact]
+    public void Renumber_WithCustomFileNameFormat_PreservesPrefixAndSeparator()
+    {
+        using var dir = new TempDirectory();
+        var config = new AdrConfig { FileNameFormat = "ADR{{Number}}-{{Slug}}", NumberPadding = 3 };
+        var service = new AdrService(dir.Path, config);
+        var first = service.CreateNew("First");
+        var second = service.CreateNew("Second");
+        File.Delete(first); // gap: #1 removed, so #2 ("Second") renumbers to #1
+
+        service.Renumber();
+
+        var files = Directory.GetFiles(dir.Path, "*.md").OrderBy(f => f).ToArray();
+        Assert.Equal("ADR001-second.md", Path.GetFileName(files[0]));
     }
 
     [Fact]

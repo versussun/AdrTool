@@ -43,7 +43,7 @@ public sealed class ListCommand(AdrService service) : ICommand
         foreach (var record in records)
         {
             var tagsSuffix = record.Tags.Count > 0 ? $"  [{string.Join(", ", record.Tags)}]" : "";
-            Console.WriteLine($"{record.Number.ToString($"D{AdrService.NumberPadding}")}  {record.Status,-20}  {record.Title}{tagsSuffix}");
+            Console.WriteLine($"{record.Number.ToString($"D{service.NumberPadding}")}  {record.Status,-20}  {record.Title}{tagsSuffix}");
         }
 
         return 0;

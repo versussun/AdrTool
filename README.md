@@ -203,9 +203,33 @@ Optional `adr.config.json` in the folder you run `adr` from:
 | `path` | Directory (relative to the current folder) where ADRs are stored. Defaults to the current folder. |
 | `templatePath` | Template file (relative to the current folder) used for new ADRs. Defaults to the tool's built-in template. |
 | `dashboardPath` | File (relative to the current folder) where `adr dashboard` writes its output. Defaults to `index.md` inside the ADR directory. |
-| `profiles` | Named overrides of `path`/`templatePath`/`dashboardPath`, selected via `--profile=name` on any command. See [Profiles](#profiles). |
+| `fileNameFormat` | Filename pattern for new ADRs. Optional; defaults to `{{Number}}-{{Slug}}`. See [File naming](#file-naming). |
+| `numberPadding` | Zero-padding width for order numbers in filenames and command output. Optional; defaults to `7`. |
+| `profiles` | Named overrides of `path`/`templatePath`/`dashboardPath`/`fileNameFormat`/`numberPadding`, selected via `--profile=name` on any command. See [Profiles](#profiles). |
 
 If `templatePath` is set but the file doesn't exist, `adr new` warns and offers to copy the default template there interactively (or run `adr template copy` to do it non-interactively).
+
+## File naming
+
+By default, `adr new "Use Clean Architecture"` creates `0000001-use_clean_architecture.md`: a 7-digit padded number, a dash, and a lowercase underscore-separated slug of the title. Both are optional to override via `adr.config.json`:
+
+```json
+{
+  "fileNameFormat": "ADR{{Number}}-{{Slug:pascal}}",
+  "numberPadding": 5
+}
+```
+
+This produces `ADR00001-Use_Clean_Architecture.md` instead. `fileNameFormat` must contain exactly one `{{Number}}` token and one `{{Slug}}` token, with `{{Number}}` appearing first; any literal text around and between them (a prefix like `ADR`, a different separator, and so on) is preserved as-is. `{{Slug}}` optionally takes a case variant:
+
+| Variant | Example |
+|---|---|
+| `{{Slug}}` (default) | `use_clean_architecture` |
+| `{{Slug:pascal}}` | `Use_Clean_Architecture` |
+| `{{Slug:kebab}}` | `use-clean-architecture` |
+| `{{Slug:upper}}` | `USE_CLEAN_ARCHITECTURE` |
+
+Changing `fileNameFormat`/`numberPadding` only affects new ADRs; existing files aren't renamed. `adr renumber` respects the current format when renaming files to sequential numbers.
 
 ## Profiles
 
@@ -229,7 +253,7 @@ Profiles give you multiple independent sets of ADRs — different templates, dif
 }
 ```
 
-Each entry under `profiles` can override `path`, `templatePath`, and `dashboardPath`; anything it leaves unset falls back to the top-level value. Select one with `--profile=name` on any command:
+Each entry under `profiles` can override `path`, `templatePath`, `dashboardPath`, `fileNameFormat`, and `numberPadding`; anything it leaves unset falls back to the top-level value. Select one with `--profile=name` on any command:
 
 ```
 adr new "Adopt event sourcing" --profile=rfc
