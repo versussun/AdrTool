@@ -197,6 +197,8 @@ public class CommandsTests
         var output = CaptureOutput(() => new HelpCommand().Execute([]));
 
         Assert.Contains("adr - Architecture Decision Record tool", output);
+        Assert.Contains("fileNameFormat", output);
+        Assert.Contains("numberPadding", output);
     }
 
     [Fact]

@@ -242,7 +242,9 @@ Profiles give you multiple independent sets of ADRs — different templates, dif
   "profiles": {
     "rfc": {
       "path": "docs/rfc",
-      "templatePath": "templates/rfc-template.md"
+      "templatePath": "templates/rfc-template.md",
+      "fileNameFormat": "RFC{{Number}}-{{Slug:kebab}}",
+      "numberPadding": 4
     },
     "runbook": {
       "path": "docs/runbooks",

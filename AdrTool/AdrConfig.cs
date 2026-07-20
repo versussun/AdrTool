@@ -34,7 +34,10 @@ public sealed class AdrConfig
     [JsonPropertyName("numberPadding")]
     public int? NumberPadding { get; set; }
 
-    /// <summary>Named override groups, selected via "--profile=name". Each overrides Path/TemplatePath/DashboardPath.</summary>
+    /// <summary>
+    /// Named override groups, selected via "--profile=name". Each overrides Path/TemplatePath/
+    /// DashboardPath/FileNameFormat/NumberPadding.
+    /// </summary>
     [JsonPropertyName("profiles")]
     public Dictionary<string, AdrProfileConfig>? Profiles { get; set; }
 
